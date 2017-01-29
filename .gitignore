@@ -1,0 +1,7 @@
+*.db
+*.opendb
+
+.vs/**/*
+Debug/**/*
+
+**/Debug/**/*
