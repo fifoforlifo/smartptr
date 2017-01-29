@@ -1,7 +1,8 @@
 #pragma once
 #include <stddef.h>
+#include <assert.h>
 
-namespace neu {
+namespace ci0 {
 
     template <class Object>
     void GlobalDeleteObject(Object* pObject)
@@ -9,7 +10,7 @@ namespace neu {
         delete pObject;
     }
 
-    template <class Object, void(*DeleteObject)(Object*) = &GlobalDeleteObject>
+    template <class Object, void(*DeleteObject)(Object*) = &GlobalDeleteObject<Object> >
     class UniquePtr
     {
     public:
@@ -39,8 +40,66 @@ namespace neu {
         UniquePtr& operator=(const This& rhs);
 
     public:
-        UniquePtr() : m_pObject() {}
-        UniquePtr(nullptr_t) : m_pObject() {}
+        friend class OutParam;
+        class OutParam
+        {
+            This* m_pSelf;
+            Object* m_pObject;
+
+        public:
+            ~OutParam()
+            {
+                if (m_pSelf)
+                {
+                    This& self = *m_pSelf;
+                    if (self.m_pObject != m_pObject)
+                    {
+                        self.Release();
+                        self.m_pObject = m_pObject;
+                    }
+                }
+                else
+                {
+                    assert(!m_pObject);
+                }
+            }
+            explicit OutParam(This& self)
+                : m_pSelf(&self)
+                , m_pObject(self.m_pObject)
+            {
+            }
+            OutParam(OutParam&& rhs)
+                : m_pSelf(rhs.m_pSelf)
+                , m_pObject(rhs.m_pObject)
+            {
+                rhs.m_pSelf = nullptr;
+                rhs.m_pObject = nullptr;
+            }
+
+            operator Object* const*() const
+            {
+                return &m_pObject;
+            }
+            operator Object**()
+            {
+                assert(m_pSelf);
+                return &m_pObject;
+            }
+        };
+
+    public:
+        ~UniquePtr()
+        {
+            Release();
+        }
+        UniquePtr()
+            : m_pObject()
+        {
+        }
+        UniquePtr(nullptr_t)
+            : m_pObject()
+        {
+        }
         UniquePtr(This&& rhs)
         {
             Assign(rhs);
@@ -53,7 +112,8 @@ namespace neu {
 
         explicit UniquePtr(Object* pObject)
             : m_pObject(pObject)
-        {}
+        {
+        }
 
         Object& operator*() const
         {
@@ -63,18 +123,15 @@ namespace neu {
         {
             return m_pObject;
         }
-        Object* const* operator&() const
-        {
-            return &m_pObject;
-        }
-        Object** operator&()
-        {
-            return &m_pObject;
-        }
 
         operator Object*() const
         {
             return m_pObject;
+        }
+
+        OutParam Out()
+        {
+            return OutParam(*this);
         }
     };
 

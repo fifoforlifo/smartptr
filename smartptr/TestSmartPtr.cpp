@@ -1,7 +1,6 @@
 #include "UniquePtr.h"
 #include <stdio.h>
-
-using namespace neu;
+#include <utility>
 
 void UseIntPtr(int* pInt)
 {
@@ -17,12 +16,12 @@ void OutputIntPtr(int** ppInt)
 void TestUniquePtr()
 {
     {
-        UniquePtr<int> pInt(new int(3));
+        ci0::UniquePtr<int> pInt(new int(3));
         if (pInt)
         {
             UseIntPtr(pInt);
         }
-        OutputIntPtr(&pInt);
+        OutputIntPtr(pInt.Out());
     }
 }
 
