@@ -39,6 +39,10 @@ namespace ci0 {
         UniquePtr(const This& rhs);
         UniquePtr& operator=(const This& rhs);
 
+        // prevent naked delete from compiling; http://stackoverflow.com/a/3312507
+        struct DontDeleteMeBro;
+        operator DontDeleteMeBro*() const;
+
     public:
         friend class OutParam;
         class OutParam
@@ -127,6 +131,10 @@ namespace ci0 {
         operator Object*() const
         {
             return m_pObject;
+        }
+        explicit operator bool() const
+        {
+            return !!m_pObject;
         }
 
         OutParam Out()

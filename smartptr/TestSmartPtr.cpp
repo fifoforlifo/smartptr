@@ -12,6 +12,10 @@ void OutputIntPtr(int** ppInt)
     printf("OutputIntPtr old=%d\n", **ppInt);
     *ppInt = new int(5);
 }
+void ClearIntPtr(int** ppInt)
+{
+    *ppInt = nullptr;
+}
 
 void TestUniquePtr()
 {
@@ -22,6 +26,13 @@ void TestUniquePtr()
             UseIntPtr(pInt);
         }
         OutputIntPtr(pInt.Out());
+        ClearIntPtr(pInt.Out());
+        if (!pInt)
+        {
+            printf("cleared\n");
+        }
+
+        //delete pInt;
     }
 }
 
