@@ -110,8 +110,11 @@ namespace ci0 {
         }
         UniquePtr& operator=(This&& rhs)
         {
-            Assign(rhs);
-            return *this;
+            if (this != &rhs)
+            {
+                Assign(rhs);
+                return *this;
+            }
         }
 
         explicit UniquePtr(Object* pObject)
@@ -137,9 +140,45 @@ namespace ci0 {
             return !!m_pObject;
         }
 
+        Object* Get() const
+        {
+            return m_pObject;
+        }
         OutParam Out()
         {
             return OutParam(*this);
+        }
+        This& Attach(Object* pObject)
+        {
+            assert(m_pObject != pObject);
+            Release();
+            m_pObject = pObject;
+            return *this;
+        }
+        Object* Detach()
+        {
+            Object* pObject = m_pObject;
+            m_pObject = nullptr;
+            return pObject;
+        }
+        This& Swap(This& rhs)
+        {
+            Object* pObject = m_pObject;
+            m_pObject = rhs.m_pObject;
+            rhs.m_pObject = pObject;
+            return *this;
+        }
+        This& Swap(This&& rhs)
+        {
+            Object* pObject = m_pObject;
+            m_pObject = rhs.m_pObject;
+            rhs.m_pObject = pObject;
+            return *this;
+        }
+        This& Reset()
+        {
+            Release();
+            return *this;
         }
     };
 

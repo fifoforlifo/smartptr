@@ -26,6 +26,7 @@ void TestUniquePtr()
             UseIntPtr(pInt);
         }
         OutputIntPtr(pInt.Out());
+        pInt.Swap(ci0::UniquePtr<int>(new int(6)));
         ClearIntPtr(pInt.Out());
         if (!pInt)
         {
