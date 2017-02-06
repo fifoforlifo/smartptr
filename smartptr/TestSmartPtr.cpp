@@ -20,11 +20,16 @@ void ClearIntPtr(int** ppInt)
     *ppInt = nullptr;
 }
 
+struct EarlierBase
+{
+    virtual ~EarlierBase() {}
+};
 struct Base
 {
+    virtual ~Base() {}
     int x;
 };
-struct Derived : Base
+struct Derived : EarlierBase, Base
 {
     int y;
 
@@ -88,6 +93,20 @@ void TestClonePtr()
         ci0::ClonePtr<int> pInt(3);
         UseDerived((Derived*)pInt);   // misuse causes compile error: cannot convert from 'int *const ' to 'Derived *'
 #endif
+    }
+    {
+        typedef ci0::ClonePtr<Base, 16> BasePtr16;
+        Derived der(3, 4);
+        ci0::ClonePtr<Base> pBase1(der);
+        BasePtr16 pBase2 = pBase1;
+        ci0::ClonePtr<Base> pBase3 = std::move(pBase2);
+        ci0::ClonePtr<Base> pBase4(der);
+        pBase2 = pBase4;
+        pBase2 = std::move(pBase4);
+        pBase3 = pBase2;
+
+        UseBase(pBase2);
+        UseDerived((Derived*)pBase2);
     }
 }
 

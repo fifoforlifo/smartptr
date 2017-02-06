@@ -81,6 +81,9 @@ namespace ci0 {
     public:
         typedef ClonePtr<Interface, SboSize> This;
 
+        template <class RhsInterface, size_t RhsSboSize>
+        friend class ClonePtr;
+
     private:
         Interface* m_pInterface;
         char* m_pObject;
@@ -330,44 +333,32 @@ namespace ci0 {
         template <class RhsInterface, size_t RhsSboSize>
         This& operator=(const ClonePtr<RhsInterface, RhsSboSize>& rhs)
         {
-            if (this != &rhs)
-            {
-                This other(rhs);
-                Release();
-                InitMove_ImplicitCast(std::move(other));
-            }
+            This other(rhs);
+            Release();
+            InitMove_ImplicitCast(std::move(other));
             return *this;
         }
         template <class RhsInterface, size_t RhsSboSize>
         This& operator=(const ClonePtr<RhsInterface, RhsSboSize>&& rhs)
         {
-            if (this != &rhs)
-            {
-                This other(rhs);
-                Release();
-                InitMove_ImplicitCast(std::move(other));
-            }
+            This other(rhs);
+            Release();
+            InitMove_ImplicitCast(std::move(other));
             return *this;
         }
         template <class RhsInterface, size_t RhsSboSize>
         This& operator=(ClonePtr<RhsInterface, RhsSboSize>& rhs)
         {
-            if (this != &rhs)
-            {
-                This other(rhs);
-                Release();
-                InitMove_ImplicitCast(std::move(other));
-            }
+            This other(rhs);
+            Release();
+            InitMove_ImplicitCast(std::move(other));
             return *this;
         }
         template <class RhsInterface, size_t RhsSboSize>
         This& operator=(ClonePtr<RhsInterface, RhsSboSize>&& rhs)
         {
-            if (this != &rhs)
-            {
-                Release();
-                InitMove_ImplicitCast(std::move(rhs));
-            }
+            Release();
+            InitMove_ImplicitCast(std::move(rhs));
             return *this;
         }
 
