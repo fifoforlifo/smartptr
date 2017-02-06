@@ -1,6 +1,7 @@
 #pragma once
 #include <stddef.h>
 #include <assert.h>
+#include <algorithm>
 
 namespace ci0 {
 
@@ -35,13 +36,14 @@ namespace ci0 {
             rhs.m_pObject = nullptr;
         }
 
-    private: // deleted members
+    private:
+        // deleted members
         UniquePtr(const This& rhs);
         UniquePtr& operator=(const This& rhs);
 
         // prevent naked delete from compiling; http://stackoverflow.com/a/3312507
-        struct DontDeleteMeBro;
-        operator DontDeleteMeBro*() const;
+        struct PreventDelete;
+        operator PreventDelete*() const;
 
     public:
         friend class OutParam;
@@ -106,7 +108,7 @@ namespace ci0 {
         }
         UniquePtr(This&& rhs)
         {
-            Assign(rhs);
+            Assign(std::forward<This>(rhs));
         }
         UniquePtr& operator=(This&& rhs)
         {
@@ -140,7 +142,7 @@ namespace ci0 {
             return !!m_pObject;
         }
 
-        Object* Get() const
+        Object* const& Get() const
         {
             return m_pObject;
         }
@@ -163,22 +165,25 @@ namespace ci0 {
         }
         This& Swap(This& rhs)
         {
-            Object* pObject = m_pObject;
-            m_pObject = rhs.m_pObject;
-            rhs.m_pObject = pObject;
+            std::swap(m_pObject, rhs.m_pObject);
             return *this;
         }
         This& Swap(This&& rhs)
         {
-            Object* pObject = m_pObject;
-            m_pObject = rhs.m_pObject;
-            rhs.m_pObject = pObject;
+            std::swap(m_pObject, rhs.m_pObject);
             return *this;
         }
         This& Reset()
         {
             Release();
             return *this;
+        }
+        template <class Other>
+        UniquePtr<Other> MoveAs()
+        {
+            UniquePtr<Other> pOther(static_cast<Other*>(m_pObject));
+            m_pObject = nullptr;
+            return pOther;
         }
     };
 
