@@ -60,3 +60,12 @@ ultimately I'm just drawing the line somewhere.
 
 Note that Microsoft's `CComPtr` does implement `operator&`, but the only
 safeguard against misuse is a runtime `assert(!p)`.
+
+
+### If smart pointers were supposed to work like this, they'd be in the standard library already!
+
+Of course!  That's why nobody uses the following libraries:
+
+* [boost](http://boost.org)
+* [Unreal Engine](https://docs.unrealengine.com/latest/INT/Programming/UnrealArchitecture/SmartPointerLibrary/index.html)
+* [EASTL](https://github.com/electronicarts/EASTL)

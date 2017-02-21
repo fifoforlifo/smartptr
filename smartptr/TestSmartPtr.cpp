@@ -1,5 +1,6 @@
 #include "UniquePtr.h"
 #include "ClonePtr.h"
+#include "IntrusivePtr.h"
 #include <stdio.h>
 #include <utility>
 
@@ -27,22 +28,22 @@ struct EarlierBase
 struct Base
 {
     virtual ~Base() {}
-    int x;
+    int foo;
 };
 struct Derived : EarlierBase, Base
 {
-    int y;
+    int bar;
 
-    Derived(int x_, int y_) { x = x_; y = y_; }
+    Derived(int foo_, int bar_) { foo = foo_; bar = bar_; }
 };
 
 void UseBase(Base* pBase)
 {
-    printf("UseBase {%d}\n", pBase->x);
+    printf("UseBase {%d}\n", pBase->foo);
 }
 void UseDerived(Derived* pDerived)
 {
-    printf("UseDerived {%d, %d}\n", pDerived->x, pDerived->y);
+    printf("UseDerived {%d, %d}\n", pDerived->foo, pDerived->bar);
 }
 
 void TestUniquePtr()
@@ -110,9 +111,104 @@ void TestClonePtr()
     }
 }
 
+
+struct RcBase
+{
+    int refcount;
+    int foo;
+
+    virtual ~RcBase()
+    {
+    }
+    RcBase(int foo_)
+        : refcount(1)
+        , foo(foo_)
+    {
+    }
+};
+struct RcDerived : RcBase
+{
+    int bar;
+
+    ~RcDerived()
+    {
+        printf("%s\n", __FUNCTION__);
+    }
+    RcDerived(int foo_, int bar_)
+        : RcBase(foo_)
+        , bar(bar_)
+    {
+        printf("%s\n", __FUNCTION__);
+    }
+};
+
+void intrusive_ptr_add_ref(RcBase* pBase)
+{
+    pBase->refcount += 1;
+    printf("%s refcount=%d\n", __FUNCTION__, pBase->refcount);
+}
+int intrusive_ptr_release(RcBase* pBase)
+{
+    printf("%s refcount=%d\n", __FUNCTION__, pBase->refcount);
+    int refcount = (pBase->refcount -= 1);
+    if (!refcount)
+    {
+        delete pBase;
+    }
+    return refcount;
+}
+
+void UseRcBase(RcBase* pBase)
+{
+    printf("UseRcBase foo=%d\n", pBase->foo);
+}
+void CreateRcDerived(RcBase** ppBase)
+{
+    *ppBase = new RcDerived(6, 7);
+}
+
+void TestIntrusivePtr()
+{
+    {
+        typedef ci0::IntrusivePtr<RcBase> RcBasePtr;
+
+        RcBasePtr pBase(new RcDerived(3, 4), false);
+        RcBasePtr pBase2 = pBase;
+        RcBasePtr pBase3 = std::move(pBase2);
+        if (!pBase2)
+        {
+            printf("pBase2 cleared\n");
+        }
+        if (pBase3)
+        {
+            printf("pBase3 set\n");
+        }
+        CreateRcDerived(pBase3.Out());
+        pBase2 = nullptr;
+        pBase = pBase3;
+        pBase3 = nullptr;
+        pBase = nullptr;
+        if (!pBase)
+        {
+            printf("cleared\n");
+        }
+
+        pBase.Attach(new RcDerived(1, 2), false);
+        ci0::IntrusivePtr<RcDerived> pDerived = new RcDerived(4, 3);
+        pBase = pDerived;
+        pDerived = (RcDerived*)(RcBase*)pBase;
+
+#if ENABLE_MISUSE
+        delete pBase;   // misuse causes compile error: 'delete': cannot convert from 'ci0::UniquePtr<int,void ci0::GlobalDeleteObject<Object>(Object *)>' to 'void*'
+#endif
+    }
+}
+
+
 int main()
 {
     TestUniquePtr();
     TestClonePtr();
+    TestIntrusivePtr();
     return 0;
 }

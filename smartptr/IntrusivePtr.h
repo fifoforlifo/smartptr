@@ -5,17 +5,12 @@
 
 namespace ci0 {
 
+    // IntrusivePtr borrows the best aspects of boost::intrusive_ptr and CComPtr.
     template <class Object>
-    void GlobalDeleteObject(Object* pObject)
-    {
-        delete pObject;
-    }
-
-    template <class Object, void(*DeleteObject)(Object*) = &GlobalDeleteObject<Object> >
-    class UniquePtr
+    class IntrusivePtr
     {
     public:
-        typedef UniquePtr<Object> This;
+        typedef IntrusivePtr<Object> This;
 
     private:
         Object* m_pObject;
@@ -25,22 +20,35 @@ namespace ci0 {
         {
             if (m_pObject)
             {
-                DeleteObject(m_pObject);
+                // clear member before calling 'release' to defend against re-entrancy [no perf cost, so why not]
+                Object* pObject = m_pObject;
                 m_pObject = nullptr;
+                intrusive_ptr_release(pObject);
             }
         }
 
-        void Assign(This&& rhs)
+        static void SafeAddRef(Object* pObject)
+        {
+            if (pObject)
+            {
+                intrusive_ptr_add_ref(pObject);
+            }
+        }
+        void CopyAssign(const This& rhs)
+        {
+            m_pObject = rhs.m_pObject;
+            if (m_pObject)
+            {
+                SafeAddRef(m_pObject);
+            }
+        }
+        void MoveAssign(This&& rhs)
         {
             m_pObject = rhs.m_pObject;
             rhs.m_pObject = nullptr;
         }
 
     private:
-        // deleted members
-        UniquePtr(const This& rhs);
-        UniquePtr& operator=(const This& rhs);
-
         // prevent naked delete from compiling; http://stackoverflow.com/a/3312507
         struct PreventDelete;
         operator PreventDelete*() const;
@@ -51,6 +59,7 @@ namespace ci0 {
         {
             This* m_pSelf;
             Object* m_pObject;
+            bool m_assumeInitialAddRef;
 
         private:
             OutParam(const OutParam& rhs); // = delete
@@ -62,26 +71,27 @@ namespace ci0 {
             {
                 if (m_pSelf)
                 {
-                    This& self = *m_pSelf;
-                    if (self.m_pObject != m_pObject)
+                    if (!m_assumeInitialAddRef)
                     {
-                        self.Release();
-                        self.m_pObject = m_pObject;
+                        SafeAddRef(m_pObject);
                     }
+                    m_pSelf->m_pObject = m_pObject;
                 }
                 else
                 {
                     assert(!m_pObject);
                 }
             }
-            explicit OutParam(This& self)
+            explicit OutParam(This& self, bool assumeInitialAddRef)
                 : m_pSelf(&self)
-                , m_pObject(self.m_pObject)
+                , m_pObject()
+                , m_assumeInitialAddRef(assumeInitialAddRef)
             {
             }
             OutParam(OutParam&& rhs)
                 : m_pSelf(rhs.m_pSelf)
                 , m_pObject(rhs.m_pObject)
+                , m_assumeInitialAddRef(rhs.m_assumeInitialAddRef)
             {
                 rhs.m_pSelf = nullptr;
                 rhs.m_pObject = nullptr;
@@ -100,34 +110,63 @@ namespace ci0 {
         };
 
     public:
-        ~UniquePtr()
+        ~IntrusivePtr()
         {
             Release();
         }
-        UniquePtr()
+        IntrusivePtr()
             : m_pObject()
         {
         }
-        UniquePtr(nullptr_t)
+        IntrusivePtr(nullptr_t)
             : m_pObject()
         {
         }
-        UniquePtr(This&& rhs)
+        IntrusivePtr(const This& rhs)
         {
-            Assign(std::move(rhs));
+            CopyAssign(rhs);
         }
-        UniquePtr& operator=(This&& rhs)
+        IntrusivePtr(This&& rhs)
         {
-            if (this != &rhs)
+            m_pObject = rhs.m_pObject;
+            rhs.m_pObject = nullptr;
+        }
+        IntrusivePtr& operator=(const This& rhs)
+        {
+            if (m_pObject != rhs.m_pObject)
             {
-                Assign(std::move<This>(rhs));
-                return *this;
+                Release();
+                CopyAssign(rhs);
             }
+            return *this;
+        }
+        IntrusivePtr& operator=(This&& rhs)
+        {
+            if (m_pObject != rhs.m_pObject)
+            {
+                Release();
+                MoveAssign(std::move(rhs));
+            }
+            return *this;
         }
 
-        explicit UniquePtr(Object* pObject)
+        IntrusivePtr(Object* pObject, bool addRef = true)
             : m_pObject(pObject)
         {
+            if (addRef)
+            {
+                SafeAddRef(pObject);
+            }
+        }
+        IntrusivePtr& operator=(Object* pObject)
+        {
+            if (m_pObject != pObject)
+            {
+                Release();
+                m_pObject = pObject;
+                SafeAddRef(pObject);
+            }
+            return *this;
         }
 
         Object& operator*() const
@@ -152,15 +191,26 @@ namespace ci0 {
         {
             return m_pObject;
         }
-        OutParam Out()
+        OutParam Out(bool assumeInitialAddRef = true)
         {
-            return OutParam(*this);
-        }
-        This& Attach(Object* pObject)
-        {
-            assert(m_pObject != pObject);
             Release();
-            m_pObject = pObject;
+            return OutParam(*this, assumeInitialAddRef);
+        }
+        This& Attach(Object* pObject, bool addRef)
+        {
+            if (addRef)
+            {
+                SafeAddRef(pObject);
+                Release();
+                m_pObject = pObject;
+                return *this;
+            }
+
+            if (m_pObject != pObject)
+            {
+                Release();
+                m_pObject = pObject;
+            }
             return *this;
         }
         Object* Detach()
@@ -185,7 +235,7 @@ namespace ci0 {
             return *this;
         }
         template <class Other>
-        UniquePtr<Other> MoveAs()
+        IntrusivePtr<Other> MoveAs()
         {
             UniquePtr<Other> pOther(static_cast<Other*>(m_pObject));
             m_pObject = nullptr;
