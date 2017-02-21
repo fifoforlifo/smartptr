@@ -45,7 +45,8 @@ Yep, you got me.  For terse syntax you must write `CreateFoo(pFoo.Out())`
 rather than the pointer-fungible `CreateFoo(&pFoo)`.  Or you must write
 a more long-winded code sequence:
 
-```IFoo* pFooRaw = nullptr;
+```cpp
+IFoo* pFooRaw = nullptr;
 CreateFoo(&pFooRaw);
 pFoo.Attach(pFooRaw);
 ```
