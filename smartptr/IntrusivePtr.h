@@ -5,7 +5,6 @@
 
 namespace ci0 {
 
-    // IntrusivePtr borrows the best aspects of boost::intrusive_ptr and CComPtr.
     template <class Object>
     class IntrusivePtr
     {
@@ -176,6 +175,11 @@ namespace ci0 {
         Object* operator->() const
         {
             return m_pObject;
+        }
+        template <class Type>
+        explicit operator Type*() const
+        {
+            return static_cast<Type*>(m_pObject);
         }
 
         operator Object*() const

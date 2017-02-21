@@ -69,6 +69,7 @@ void TestUniquePtr()
     {
         ci0::UniquePtr<Derived> pDerived(new Derived(2, 3));
         ci0::UniquePtr<Base> pBase = pDerived.MoveAs<Base>();
+        Derived* pDerived2 = (Derived*)pBase;
     }
 }
 
@@ -194,9 +195,9 @@ void TestIntrusivePtr()
         }
 
         pBase.Attach(new RcDerived(1, 2), false);
-        ci0::IntrusivePtr<RcDerived> pDerived = new RcDerived(4, 3);
+        ci0::IntrusivePtr<RcDerived> pDerived(new RcDerived(4, 3), false);
         pBase = pDerived;
-        pDerived = (RcDerived*)(RcBase*)pBase;
+        pDerived = (RcDerived*)pBase;
 
 #if ENABLE_MISUSE
         delete pBase;   // misuse causes compile error: 'delete': cannot convert from 'ci0::UniquePtr<int,void ci0::GlobalDeleteObject<Object>(Object *)>' to 'void*'

@@ -147,6 +147,11 @@ namespace ci0 {
         {
             return !!m_pObject;
         }
+        template <class Type>
+        explicit operator Type*() const
+        {
+            return static_cast<Type*>(m_pObject);
+        }
 
         Object* const& Get() const
         {
