@@ -6,12 +6,12 @@
 namespace ci0 {
 
     template <class Object>
-    void GlobalDeleteObject(Object* pObject)
+    void DeleteObjectWithGlobalDelete(Object* pObject)
     {
         delete pObject;
     }
 
-    template <class Object, void(*DeleteObject)(Object*) = &GlobalDeleteObject<Object> >
+    template <class Object, void(*DeleteObject)(Object*) = &DeleteObjectWithGlobalDelete<Object> >
     class UniquePtr
     {
     public:
@@ -153,44 +153,44 @@ namespace ci0 {
             return static_cast<Type*>(m_pObject);
         }
 
-        Object* const& Get() const
+        Object* const& get() const
         {
             return m_pObject;
         }
-        OutParam Out()
+        OutParam out()
         {
             return OutParam(*this);
         }
-        This& Attach(Object* pObject)
+        This& attach(Object* pObject)
         {
             assert(m_pObject != pObject);
             Release();
             m_pObject = pObject;
             return *this;
         }
-        Object* Detach()
+        Object* detach()
         {
             Object* pObject = m_pObject;
             m_pObject = nullptr;
             return pObject;
         }
-        This& Swap(This& rhs)
+        This& swap(This& rhs)
         {
             std::swap(m_pObject, rhs.m_pObject);
             return *this;
         }
-        This& Swap(This&& rhs)
+        This& swap(This&& rhs)
         {
             std::swap(m_pObject, rhs.m_pObject);
             return *this;
         }
-        This& Reset()
+        This& reset()
         {
             Release();
             return *this;
         }
         template <class Other>
-        UniquePtr<Other> MoveAs()
+        UniquePtr<Other> move_as()
         {
             UniquePtr<Other> pOther(static_cast<Other*>(m_pObject));
             m_pObject = nullptr;

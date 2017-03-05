@@ -5,6 +5,9 @@
 
 namespace ci0 {
 
+    // IntrusivePtr is designed to be compatible with boost::intrusive_ptr:
+    //  http://www.boost.org/doc/libs/master/libs/smart_ptr/intrusive_ptr.html
+    //
     // IntrusivePtr assignment rules are similar to CComPtr
     //  *   Assignment from a raw pointer acts like a copy; add_ref() is called.
     //  *   The constructor performs add_ref() by default, for parity with assignment.
@@ -14,10 +17,16 @@ namespace ci0 {
     //
     // Most new objects have an initial refcount of 1, to avoid the perf overhead
     // of an initial add_ref() call.  Such objects should never be created like this:
-    //      IntrusivePtr<Foo> pFoo = new Foo();
-    //      pFoo = new Foo();
+    //      IntrusivePtr<Foo> pFoo = new Foo{};
+    //      pFoo = new Foo{};
     // In both cases, a memory leak will occur since the constructor/operator= will
     // perform an additional add_ref(), resulting in a single reference with refcount=2.
+    //
+    // Note that boost::intrusive_ref_counter has an initial refcount=0, which makes
+    // the following code safe (but at the expense of some micro-perf):
+    //      IntrusivePtr<Foo> pFoo = new intrusive_ref_counter{};
+    //      pFoo = new intrusive_ref_counter{};
+    //  http://www.boost.org/doc/libs/master/libs/smart_ptr/intrusive_ref_counter.html
 
 
     template <class Object>
@@ -206,16 +215,16 @@ namespace ci0 {
             return !!m_pObject;
         }
 
-        Object* const& Get() const
+        Object* const& get() const
         {
             return m_pObject;
         }
-        OutParam Out(bool assumeInitialAddRef = true)
+        OutParam out(bool assumeInitialAddRef = true)
         {
             Release();
             return OutParam(*this, assumeInitialAddRef);
         }
-        This& Attach(Object* pObject, bool addRef)
+        This& attach(Object* pObject, bool addRef = true)
         {
             if (addRef)
             {
@@ -232,29 +241,29 @@ namespace ci0 {
             }
             return *this;
         }
-        Object* Detach()
+        Object* detach()
         {
             Object* pObject = m_pObject;
             m_pObject = nullptr;
             return pObject;
         }
-        This& Swap(This& rhs)
+        This& swap(This& rhs)
         {
             std::swap(m_pObject, rhs.m_pObject);
             return *this;
         }
-        This& Swap(This&& rhs)
+        This& swap(This&& rhs)
         {
             std::swap(m_pObject, rhs.m_pObject);
             return *this;
         }
-        This& Reset()
+        This& reset()
         {
             Release();
             return *this;
         }
         template <class Other>
-        IntrusivePtr<Other> MoveAs()
+        IntrusivePtr<Other> move_as()
         {
             UniquePtr<Other> pOther(static_cast<Other*>(m_pObject));
             m_pObject = nullptr;

@@ -54,9 +54,9 @@ void TestUniquePtr()
         {
             UseIntPtr(pInt);
         }
-        OutputIntPtr(pInt.Out());
-        pInt.Swap(ci0::UniquePtr<int>(new int(6)));
-        ClearIntPtr(pInt.Out());
+        OutputIntPtr(pInt.out());
+        pInt.swap(ci0::UniquePtr<int>(new int(6)));
+        ClearIntPtr(pInt.out());
         if (!pInt)
         {
             printf("cleared\n");
@@ -68,7 +68,7 @@ void TestUniquePtr()
     }
     {
         ci0::UniquePtr<Derived> pDerived(new Derived(2, 3));
-        ci0::UniquePtr<Base> pBase = pDerived.MoveAs<Base>();
+        ci0::UniquePtr<Base> pBase = pDerived.move_as<Base>();
         Derived* pDerived2 = (Derived*)pBase;
     }
 }
@@ -184,7 +184,7 @@ void TestIntrusivePtr()
         {
             printf("pBase3 set\n");
         }
-        CreateRcDerived(pBase3.Out());
+        CreateRcDerived(pBase3.out());
         pBase2 = nullptr;
         pBase = pBase3;
         pBase3 = nullptr;
@@ -194,7 +194,7 @@ void TestIntrusivePtr()
             printf("cleared\n");
         }
 
-        pBase.Attach(new RcDerived(1, 2), false);
+        pBase.attach(new RcDerived(1, 2), false);
         ci0::IntrusivePtr<RcDerived> pDerived(new RcDerived(4, 3), false);
         pBase = pDerived;
         pDerived = (RcDerived*)pBase;

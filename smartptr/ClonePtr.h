@@ -392,7 +392,7 @@ namespace ci0 {
         // Takes ownership of pObject.  Allows initialization without copying.
         //      ClonePtr<Base> pBase = ClonePtr<Base>().Attach(new Derived(...));
         template <class Object>
-        This& Attach(Object* pObject)
+        This& attach(Object* pObject)
         {
             Release();
             m_pObject = pObject;
@@ -406,18 +406,18 @@ namespace ci0 {
         // This could be revisited though ...
 
         // TODO: optimized Swap() requires handling all 4 cases of {sbo, !sbo}x{rhsSbo, !rhsSbo}
-        This& Swap(This& rhs)
+        This& swap(This& rhs)
         {
             std::swap(*this, rhs);
             return *this;
         }
-        This& Swap(This&& rhs)
+        This& swap(This&& rhs)
         {
             std::swap(*this, rhs);
             return *this;
         }
 
-        This& Reset()
+        This& reset()
         {
             Release();
             InitNull();
@@ -425,21 +425,21 @@ namespace ci0 {
         }
 
         template <class RhsInterface, size_t RhsSboSize = sizeof(void*)>
-        ClonePtr<RhsInterface, RhsSboSize> CopyAs()
+        ClonePtr<RhsInterface, RhsSboSize> copy_as()
         {
             ClonePtr<RhsInterface, RhsSboSize> pOther;
             pOther.InitCopy_StaticCast(*this);
             return pOther;
         }
         template <class RhsInterface, size_t RhsSboSize = sizeof(void*)>
-        ClonePtr<RhsInterface, RhsSboSize> MoveAs()
+        ClonePtr<RhsInterface, RhsSboSize> move_as()
         {
             ClonePtr<RhsInterface, RhsSboSize> pOther;
             pOther.InitMove_StaticCast(*this);
             return pOther;
         }
 
-        Interface* const& Get() const
+        Interface* const& get() const
         {
             return m_pInterface;
         }
