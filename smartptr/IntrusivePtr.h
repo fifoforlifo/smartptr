@@ -262,6 +262,11 @@ namespace ci0 {
             Release();
             return *this;
         }
+        // note: present for STL/boost compatibility, but you should prefer to call attach() instead
+        This& reset(Object* pObject, bool addRef = true)
+        {
+            return attach(pObject, addRef);
+        }
         template <class Other>
         IntrusivePtr<Other> move_as()
         {

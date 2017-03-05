@@ -174,6 +174,11 @@ namespace ci0 {
             m_pObject = nullptr;
             return pObject;
         }
+        // note: present for STL/boost compatibility, but you should prefer to call detach() instead
+        Object* release()
+        {
+            return detach();
+        }
         This& swap(This& rhs)
         {
             std::swap(m_pObject, rhs.m_pObject);
@@ -188,6 +193,11 @@ namespace ci0 {
         {
             Release();
             return *this;
+        }
+        // note: present for STL/boost compatibility, but you should prefer to call attach() instead
+        This& reset(Object* pObject, bool addRef = true)
+        {
+            return attach(pObject, addRef);
         }
         template <class Other>
         UniquePtr<Other> move_as()

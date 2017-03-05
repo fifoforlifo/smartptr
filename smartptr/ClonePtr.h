@@ -400,12 +400,12 @@ namespace ci0 {
             m_pCloner = &ClonePtrCloner<Object>::Instance;
             return *this;
         }
-        // No Detach() in the current design because:
+        // No detach() in the current design because:
         //  (a) if Interface lacks a public virtual destructor, the caller cannot delete the object
-        //  (b) if object resides in SBO, Detach() would require a new allocation
+        //  (b) if object resides in SBO, detach() would require a new allocation (no longer noexcept)
         // This could be revisited though ...
 
-        // TODO: optimized Swap() requires handling all 4 cases of {sbo, !sbo}x{rhsSbo, !rhsSbo}
+        // TODO: optimized swap() requires handling all 4 cases of {sbo, !sbo}x{rhsSbo, !rhsSbo}
         This& swap(This& rhs)
         {
             std::swap(*this, rhs);
@@ -422,6 +422,12 @@ namespace ci0 {
             Release();
             InitNull();
             return *this;
+        }
+        // note: present for STL/boost compatibility, but you should prefer to call attach() instead
+        template <class Object>
+        This& reset(Object* pObject)
+        {
+            return attach(pObject);
         }
 
         template <class RhsInterface, size_t RhsSboSize = sizeof(void*)>
