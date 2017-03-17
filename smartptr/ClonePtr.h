@@ -481,6 +481,63 @@ namespace ci0 {
         }
     };
 
+    template <class LhsObject, size_t LhsSboSize, class RhsObject, size_t RhsSboSize>
+    inline bool operator==(const ClonePtr<LhsObject, LhsSboSize>& lhs, const ClonePtr<RhsObject, RhsSboSize>& rhs)
+    {
+        return lhs.get() == rhs.get();
+    }
+    template <class LhsObject, size_t LhsSboSize, class RhsObject, size_t RhsSboSize>
+    inline bool operator!=(const ClonePtr<LhsObject, LhsSboSize>& lhs, const ClonePtr<RhsObject, RhsSboSize>& rhs)
+    {
+        return lhs.get() != rhs.get();
+    }
+    template <class LhsObject, size_t LhsSboSize, class RhsObject, size_t RhsSboSize>
+    inline bool operator>=(const ClonePtr<LhsObject, LhsSboSize>& lhs, const ClonePtr<RhsObject, RhsSboSize>& rhs)
+    {
+        return lhs.get() >= rhs.get();
+    }
+    template <class LhsObject, size_t LhsSboSize, class RhsObject, size_t RhsSboSize>
+    inline bool operator<=(const ClonePtr<LhsObject, LhsSboSize>& lhs, const ClonePtr<RhsObject, RhsSboSize>& rhs)
+    {
+        return lhs.get() <= rhs.get();
+    }
+    template <class LhsObject, size_t LhsSboSize, class RhsObject, size_t RhsSboSize>
+    inline bool operator>(const ClonePtr<LhsObject, LhsSboSize>& lhs, const ClonePtr<RhsObject, RhsSboSize>& rhs)
+    {
+        return lhs.get() > rhs.get();
+    }
+    template <class LhsObject, size_t LhsSboSize, class RhsObject, size_t RhsSboSize>
+    inline bool operator<(const ClonePtr<LhsObject, LhsSboSize>& lhs, const ClonePtr<RhsObject, RhsSboSize>& rhs)
+    {
+        return lhs.get() < rhs.get();
+    }
+
+    template <class Object, size_t SboSize>
+    inline bool operator==(const ClonePtr<Object, SboSize>& lhs, std::nullptr_t)
+    {
+        return lhs.get() == nullptr;
+    }
+    template <class Object, size_t SboSize>
+    inline bool operator==(std::nullptr_t, const ClonePtr<Object, SboSize>& rhs)
+    {
+        return nullptr == rhs.get();
+    }
+    template <class Object, size_t SboSize>
+    inline bool operator!=(const ClonePtr<Object, SboSize>& lhs, std::nullptr_t)
+    {
+        return lhs.get() != nullptr;
+    }
+    template <class Object, size_t SboSize>
+    inline bool operator!=(std::nullptr_t, const ClonePtr<Object, SboSize>& rhs)
+    {
+        return nullptr != rhs.get();
+    }
+
+    template <class Object, size_t SboSize>
+    void swap(ClonePtr<Object, SboSize>& lhs, ClonePtr<Object, SboSize>& rhs)
+    {
+        lhs.swap(rhs);
+    }
 }
 
 #if _MSC_VER

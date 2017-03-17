@@ -277,4 +277,61 @@ namespace ci0 {
         }
     };
 
+    template <class LhsObject, class RhsObject>
+    inline bool operator==(const IntrusivePtr<LhsObject>& lhs, const IntrusivePtr<RhsObject>& rhs)
+    {
+        return lhs.get() == rhs.get();
+    }
+    template <class LhsObject, class RhsObject>
+    inline bool operator!=(const IntrusivePtr<LhsObject>& lhs, const IntrusivePtr<RhsObject>& rhs)
+    {
+        return lhs.get() != rhs.get();
+    }
+    template <class LhsObject, class RhsObject>
+    inline bool operator>=(const IntrusivePtr<LhsObject>& lhs, const IntrusivePtr<RhsObject>& rhs)
+    {
+        return lhs.get() >= rhs.get();
+    }
+    template <class LhsObject, class RhsObject>
+    inline bool operator<=(const IntrusivePtr<LhsObject>& lhs, const IntrusivePtr<RhsObject>& rhs)
+    {
+        return lhs.get() <= rhs.get();
+    }
+    template <class LhsObject, class RhsObject>
+    inline bool operator>(const IntrusivePtr<LhsObject>& lhs, const IntrusivePtr<RhsObject>& rhs)
+    {
+        return lhs.get() > rhs.get();
+    }
+    template <class LhsObject, class RhsObject>
+    inline bool operator<(const IntrusivePtr<LhsObject>& lhs, const IntrusivePtr<RhsObject>& rhs)
+    {
+        return lhs.get() < rhs.get();
+    }
+
+    template <class Object>
+    inline bool operator==(const IntrusivePtr<Object>& lhs, std::nullptr_t)
+    {
+        return lhs.get() == nullptr;
+    }
+    template <class Object>
+    inline bool operator==(std::nullptr_t, const IntrusivePtr<Object>& rhs)
+    {
+        return nullptr == rhs.get();
+    }
+    template <class Object>
+    inline bool operator!=(const IntrusivePtr<Object>& lhs, std::nullptr_t)
+    {
+        return lhs.get() != nullptr;
+    }
+    template <class Object>
+    inline bool operator!=(std::nullptr_t, const IntrusivePtr<Object>& rhs)
+    {
+        return nullptr != rhs.get();
+    }
+
+    template <class Object>
+    void swap(IntrusivePtr<Object>& lhs, IntrusivePtr<Object>& rhs)
+    {
+        lhs.swap(rhs);
+    }
 }

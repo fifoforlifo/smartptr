@@ -76,6 +76,24 @@ void TestUniquePtr()
         pBase2 = std::move(pDerived);
         pBase2 = ci0::UniquePtr<Derived>(new Derived(6, 7));
 
+        bool testComparisons = false;
+        testComparisons = (pBase == pBase2);
+        testComparisons = (pBase != pBase2);
+        testComparisons = (pBase <= pBase2);
+        testComparisons = (pBase >= pBase2);
+        testComparisons = (pBase <  pBase2);
+        testComparisons = (pBase >  pBase2);
+        testComparisons = (pBase == (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase != (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase <= (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase >= (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase <  (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase >  (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase == nullptr);
+        testComparisons = (nullptr == pBase);
+        testComparisons = (pBase != nullptr);
+        testComparisons = (nullptr != pBase);
+
 #if ENABLE_MISUSE
         pDerived = pDerived2;       // misuse causes compile error: binary '=': no operator found which takes a right-hand operand of type 'Derived *' (or there is no acceptable conversion)
         pDerived = ci0::UniquePtr<Derived>(pDerived);       // misuse causes compile error: 'ci0::UniquePtr<Derived,void ci0::DeleteObjectWithGlobalDelete<Object>(Object *)>::UniquePtr': cannot access private member declared in class 'ci0::UniquePtr<Derived,void ci0::DeleteObjectWithGlobalDelete<Object>(Object *)>'
@@ -122,6 +140,24 @@ void TestClonePtr()
 
         pBase2 = nullptr;
         pBase2.attach(new Derived(7, 8));
+
+        bool testComparisons = false;
+        testComparisons = (pBase1 == pBase2);
+        testComparisons = (pBase1 != pBase2);
+        testComparisons = (pBase1 <= pBase2);
+        testComparisons = (pBase1 >= pBase2);
+        testComparisons = (pBase1 <  pBase2);
+        testComparisons = (pBase1 >  pBase2);
+        testComparisons = (pBase1 == (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase1 != (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase1 <= (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase1 >= (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase1 <  (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase1 >  (Base*)pBase2); // implicit cast handled this
+        testComparisons = (pBase1 == nullptr);
+        testComparisons = (nullptr == pBase1);
+        testComparisons = (pBase1 != nullptr);
+        testComparisons = (nullptr != pBase1);
     }
 }
 
@@ -212,6 +248,24 @@ void TestIntrusivePtr()
         pBase = pDerived;
         pDerived = (RcDerived*)pBase;
         pDerived.attach(new RcDerived(5, 6), false);
+
+        bool testComparisons = false;
+        testComparisons = (pBase == pBase2);
+        testComparisons = (pBase != pBase2);
+        testComparisons = (pBase <= pBase2);
+        testComparisons = (pBase >= pBase2);
+        testComparisons = (pBase <  pBase2);
+        testComparisons = (pBase >  pBase2);
+        testComparisons = (pBase == (RcBase*)pBase2); // implicit cast handled this
+        testComparisons = (pBase != (RcBase*)pBase2); // implicit cast handled this
+        testComparisons = (pBase <= (RcBase*)pBase2); // implicit cast handled this
+        testComparisons = (pBase >= (RcBase*)pBase2); // implicit cast handled this
+        testComparisons = (pBase <  (RcBase*)pBase2); // implicit cast handled this
+        testComparisons = (pBase >  (RcBase*)pBase2); // implicit cast handled this
+        testComparisons = (pBase == nullptr);
+        testComparisons = (nullptr == pBase);
+        testComparisons = (pBase != nullptr);
+        testComparisons = (nullptr != pBase);
 
 #if ENABLE_MISUSE
         delete pBase;   // misuse causes compile error: 'delete': cannot convert from 'ci0::UniquePtr<int,void ci0::GlobalDeleteObject<Object>(Object *)>' to 'void*'

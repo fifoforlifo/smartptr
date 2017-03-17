@@ -230,4 +230,61 @@ namespace ci0 {
         }
     };
 
+    template <class LhsObject, void(*LhsDeleteObject)(LhsObject*), class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+    inline bool operator==(const UniquePtr<LhsObject, LhsDeleteObject>& lhs, const UniquePtr<RhsObject, RhsDeleteObject>& rhs)
+    {
+        return lhs.get() == rhs.get();
+    }
+    template <class LhsObject, void(*LhsDeleteObject)(LhsObject*), class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+    inline bool operator!=(const UniquePtr<LhsObject, LhsDeleteObject>& lhs, const UniquePtr<RhsObject, RhsDeleteObject>& rhs)
+    {
+        return lhs.get() != rhs.get();
+    }
+    template <class LhsObject, void(*LhsDeleteObject)(LhsObject*), class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+    inline bool operator>=(const UniquePtr<LhsObject, LhsDeleteObject>& lhs, const UniquePtr<RhsObject, RhsDeleteObject>& rhs)
+    {
+        return lhs.get() >= rhs.get();
+    }
+    template <class LhsObject, void(*LhsDeleteObject)(LhsObject*), class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+    inline bool operator<=(const UniquePtr<LhsObject, LhsDeleteObject>& lhs, const UniquePtr<RhsObject, RhsDeleteObject>& rhs)
+    {
+        return lhs.get() <= rhs.get();
+    }
+    template <class LhsObject, void(*LhsDeleteObject)(LhsObject*), class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+    inline bool operator>(const UniquePtr<LhsObject, LhsDeleteObject>& lhs, const UniquePtr<RhsObject, RhsDeleteObject>& rhs)
+    {
+        return lhs.get() > rhs.get();
+    }
+    template <class LhsObject, void(*LhsDeleteObject)(LhsObject*), class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+    inline bool operator<(const UniquePtr<LhsObject, LhsDeleteObject>& lhs, const UniquePtr<RhsObject, RhsDeleteObject>& rhs)
+    {
+        return lhs.get() < rhs.get();
+    }
+
+    template <class Object, void(*DeleteObject)(Object*)>
+    inline bool operator==(const UniquePtr<Object, DeleteObject>& lhs, std::nullptr_t)
+    {
+        return lhs.get() == nullptr;
+    }
+    template <class Object, void(*DeleteObject)(Object*)>
+    inline bool operator==(std::nullptr_t, const UniquePtr<Object, DeleteObject>& rhs)
+    {
+        return nullptr == rhs.get();
+    }
+    template <class Object, void(*DeleteObject)(Object*)>
+    inline bool operator!=(const UniquePtr<Object, DeleteObject>& lhs, std::nullptr_t)
+    {
+        return lhs.get() != nullptr;
+    }
+    template <class Object, void(*DeleteObject)(Object*)>
+    inline bool operator!=(std::nullptr_t, const UniquePtr<Object, DeleteObject>& rhs)
+    {
+        return nullptr != rhs.get();
+    }
+
+    template <class Object, void(*DeleteObject)(Object*)>
+    void swap(UniquePtr<Object, DeleteObject>& lhs, UniquePtr<Object, DeleteObject>& rhs)
+    {
+        lhs.swap(rhs);
+    }
 }
