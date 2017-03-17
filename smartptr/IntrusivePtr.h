@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <assert.h>
 #include <algorithm>
+#include <utility>
+#include "Noexcept.h"
 
 namespace ci0 {
 
@@ -90,7 +92,7 @@ namespace ci0 {
             OutParam& operator=(OutParam&& rhs); // = delete
 
         public:
-            ~OutParam()
+            ~OutParam() CI0_NOEXCEPT(true)
             {
                 if (m_pSelf)
                 {
@@ -105,13 +107,13 @@ namespace ci0 {
                     assert(!m_pObject);
                 }
             }
-            explicit OutParam(This& self, bool assumeInitialAddRef)
+            explicit OutParam(This& self, bool assumeInitialAddRef) CI0_NOEXCEPT(true)
                 : m_pSelf(&self)
                 , m_pObject()
                 , m_assumeInitialAddRef(assumeInitialAddRef)
             {
             }
-            OutParam(OutParam&& rhs)
+            OutParam(OutParam&& rhs) CI0_NOEXCEPT(true)
                 : m_pSelf(rhs.m_pSelf)
                 , m_pObject(rhs.m_pObject)
                 , m_assumeInitialAddRef(rhs.m_assumeInitialAddRef)
@@ -120,12 +122,12 @@ namespace ci0 {
                 rhs.m_pObject = nullptr;
             }
 
-            operator Object* const*() const
+            operator Object* const*() const CI0_NOEXCEPT(true)
             {
                 assert(m_pSelf);
                 return &m_pObject;
             }
-            operator Object**()
+            operator Object**() CI0_NOEXCEPT(true)
             {
                 assert(m_pSelf);
                 return &m_pObject;
@@ -133,37 +135,32 @@ namespace ci0 {
         };
 
     public:
-        ~IntrusivePtr()
+        ~IntrusivePtr() CI0_NOEXCEPT(true)
         {
             Release();
         }
-        IntrusivePtr()
+        IntrusivePtr() CI0_NOEXCEPT(true)
             : m_pObject()
         {
         }
-        IntrusivePtr(nullptr_t)
+        IntrusivePtr(nullptr_t) CI0_NOEXCEPT(true)
             : m_pObject()
         {
         }
-        IntrusivePtr(const This& rhs)
+        IntrusivePtr(const This& rhs) CI0_NOEXCEPT(true)
         {
             CopyAssign(rhs);
         }
-        IntrusivePtr(This&& rhs)
+        IntrusivePtr(This&& rhs) CI0_NOEXCEPT(true)
         {
-            m_pObject = rhs.m_pObject;
-            rhs.m_pObject = nullptr;
+            MoveAssign(std::move(rhs));
         }
-        IntrusivePtr& operator=(const This& rhs)
+        This& operator=(const This& rhs)
         {
-            if (m_pObject != rhs.m_pObject)
-            {
-                Release();
-                CopyAssign(rhs);
-            }
+            This(rhs).swap(*this);
             return *this;
         }
-        IntrusivePtr& operator=(This&& rhs)
+        This& operator=(This&& rhs) CI0_NOEXCEPT(true)
         {
             if (m_pObject != rhs.m_pObject)
             {
@@ -181,45 +178,45 @@ namespace ci0 {
                 SafeAddRef(pObject);
             }
         }
-        IntrusivePtr& operator=(Object* pObject)
+        This& operator=(Object* pObject)
         {
             if (m_pObject != pObject)
             {
+                SafeAddRef(pObject);
                 Release();
                 m_pObject = pObject;
-                SafeAddRef(pObject);
             }
             return *this;
         }
 
-        Object& operator*() const
+        Object& operator*() const CI0_NOEXCEPT(true)
         {
             return *m_pObject;
         }
-        Object* operator->() const
+        Object* operator->() const CI0_NOEXCEPT(true)
         {
             return m_pObject;
         }
+
+        operator Object*() const CI0_NOEXCEPT(true)
+        {
+            return m_pObject;
+        }
+        explicit operator bool() const CI0_NOEXCEPT(true)
+        {
+            return !!m_pObject;
+        }
         template <class Type>
-        explicit operator Type*() const
+        explicit operator Type*() const CI0_NOEXCEPT(true)
         {
             return static_cast<Type*>(m_pObject);
         }
 
-        operator Object*() const
+        Object* const& get() const CI0_NOEXCEPT(true)
         {
             return m_pObject;
         }
-        explicit operator bool() const
-        {
-            return !!m_pObject;
-        }
-
-        Object* const& get() const
-        {
-            return m_pObject;
-        }
-        OutParam out(bool assumeInitialAddRef = true)
+        OutParam out(bool assumeInitialAddRef = true) CI0_NOEXCEPT(true)
         {
             Release();
             return OutParam(*this, assumeInitialAddRef);
@@ -241,23 +238,27 @@ namespace ci0 {
             }
             return *this;
         }
-        Object* detach()
+        Object* detach() CI0_NOEXCEPT(true)
         {
             Object* pObject = m_pObject;
             m_pObject = nullptr;
             return pObject;
         }
-        This& swap(This& rhs)
+        This& swap(This& rhs) CI0_NOEXCEPT(true)
         {
-            std::swap(m_pObject, rhs.m_pObject);
+            Object* pObject = m_pObject;
+            m_pObject = rhs.m_pObject;
+            rhs.m_pObject = pObject;
             return *this;
         }
-        This& swap(This&& rhs)
+        This& swap(This&& rhs) CI0_NOEXCEPT(true)
         {
-            std::swap(m_pObject, rhs.m_pObject);
+            Object* pObject = m_pObject;
+            m_pObject = rhs.m_pObject;
+            rhs.m_pObject = pObject;
             return *this;
         }
-        This& reset()
+        This& reset() CI0_NOEXCEPT(true)
         {
             Release();
             return *this;
@@ -268,9 +269,9 @@ namespace ci0 {
             return attach(pObject, addRef);
         }
         template <class Other>
-        IntrusivePtr<Other> move_as()
+        IntrusivePtr<Other> move_as() CI0_NOEXCEPT(true)
         {
-            UniquePtr<Other> pOther(static_cast<Other*>(m_pObject));
+            UniquePtr<Other> pOther(static_cast<Other*>(m_pObject), false);
             m_pObject = nullptr;
             return pOther;
         }
