@@ -361,6 +361,12 @@ namespace ci0 {
             InitMove_ImplicitCast(std::move(rhs));
             return *this;
         }
+        This& operator=(nullptr_t)
+        {
+            Release();
+            InitNull();
+            return *this;
+        }
 
         // Copy or move a concrete object in.
         template <class Object>
@@ -395,8 +401,8 @@ namespace ci0 {
         This& attach(Object* pObject)
         {
             Release();
-            m_pObject = pObject;
-            m_pInterface = m_pObject;
+            m_pObject = (char*)pObject;
+            m_pInterface = pObject;
             m_pCloner = &ClonePtrCloner<Object>::Instance;
             return *this;
         }

@@ -70,6 +70,7 @@ void TestUniquePtr()
         ci0::UniquePtr<Derived> pDerived(new Derived(2, 3));
         ci0::UniquePtr<Base> pBase = pDerived.move_as<Base>();
         Derived* pDerived2 = (Derived*)pBase;
+        pBase.attach(new Derived(4, 5));
     }
 }
 
@@ -109,6 +110,9 @@ void TestClonePtr()
 
         UseBase(pBase2);
         UseDerived((Derived*)pBase2);
+
+        pBase2 = nullptr;
+        pBase2.attach(new Derived(7, 8));
     }
 }
 
@@ -133,24 +137,24 @@ struct RcDerived : RcBase
 
     ~RcDerived()
     {
-        printf("%s\n", __FUNCTION__);
+        printf("%s %p\n", __FUNCTION__, this);
     }
     RcDerived(int foo_, int bar_)
         : RcBase(foo_)
         , bar(bar_)
     {
-        printf("%s\n", __FUNCTION__);
+        printf("%s %p\n", __FUNCTION__, this);
     }
 };
 
 void intrusive_ptr_add_ref(RcBase* pBase)
 {
     pBase->refcount += 1;
-    printf("%s refcount=%d\n", __FUNCTION__, pBase->refcount);
+    printf("%s %p refcount=%d\n", __FUNCTION__, pBase, pBase->refcount);
 }
 int intrusive_ptr_release(RcBase* pBase)
 {
-    printf("%s refcount=%d\n", __FUNCTION__, pBase->refcount);
+    printf("%s %p refcount=%d\n", __FUNCTION__, pBase, pBase->refcount);
     int refcount = (pBase->refcount -= 1);
     if (!refcount)
     {
@@ -198,6 +202,7 @@ void TestIntrusivePtr()
         ci0::IntrusivePtr<RcDerived> pDerived(new RcDerived(4, 3), false);
         pBase = pDerived;
         pDerived = (RcDerived*)pBase;
+        pDerived.attach(new RcDerived(5, 6), false);
 
 #if ENABLE_MISUSE
         delete pBase;   // misuse causes compile error: 'delete': cannot convert from 'ci0::UniquePtr<int,void ci0::GlobalDeleteObject<Object>(Object *)>' to 'void*'

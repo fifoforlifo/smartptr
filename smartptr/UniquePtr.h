@@ -195,9 +195,9 @@ namespace ci0 {
             return *this;
         }
         // note: present for STL/boost compatibility, but you should prefer to call attach() instead
-        This& reset(Object* pObject, bool addRef = true)
+        This& reset(Object* pObject)
         {
-            return attach(pObject, addRef);
+            return attach(pObject);
         }
         template <class Other>
         UniquePtr<Other> move_as()
