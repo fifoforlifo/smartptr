@@ -4,6 +4,7 @@
     <ClInclude Include="UniquePtr.h" />
     <ClInclude Include="ClonePtr.h" />
     <ClInclude Include="IntrusivePtr.h" />
+    <ClInclude Include="Noexcept.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestSmartPtr.cpp" />

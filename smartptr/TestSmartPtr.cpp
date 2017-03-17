@@ -71,6 +71,15 @@ void TestUniquePtr()
         ci0::UniquePtr<Base> pBase = pDerived.move_as<Base>();
         Derived* pDerived2 = (Derived*)pBase;
         pBase.attach(new Derived(4, 5));
+        ci0::UniquePtr<Base> pBase2(std::move(pDerived));
+        pBase = std::move(pBase2);
+        pBase2 = std::move(pDerived);
+        pBase2 = ci0::UniquePtr<Derived>(new Derived(6, 7));
+
+#if ENABLE_MISUSE
+        pDerived = pDerived2;       // misuse causes compile error: binary '=': no operator found which takes a right-hand operand of type 'Derived *' (or there is no acceptable conversion)
+        pDerived = ci0::UniquePtr<Derived>(pDerived);       // misuse causes compile error: 'ci0::UniquePtr<Derived,void ci0::DeleteObjectWithGlobalDelete<Object>(Object *)>::UniquePtr': cannot access private member declared in class 'ci0::UniquePtr<Derived,void ci0::DeleteObjectWithGlobalDelete<Object>(Object *)>'
+#endif
     }
 }
 

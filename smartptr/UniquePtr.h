@@ -1,7 +1,8 @@
 #pragma once
 #include <stddef.h>
 #include <assert.h>
-#include <algorithm>
+#include <utility>
+#include "Noexcept.h"
 
 namespace ci0 {
 
@@ -17,6 +18,9 @@ namespace ci0 {
     public:
         typedef UniquePtr<Object> This;
 
+        template <class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+        friend class UniquePtr;
+
     private:
         Object* m_pObject;
 
@@ -30,7 +34,8 @@ namespace ci0 {
             }
         }
 
-        void Assign(This&& rhs)
+        template <class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+        void Assign(UniquePtr<RhsObject, RhsDeleteObject>&& rhs)
         {
             m_pObject = rhs.m_pObject;
             rhs.m_pObject = nullptr;
@@ -58,7 +63,7 @@ namespace ci0 {
             OutParam& operator=(OutParam&& rhs); // = delete
 
         public:
-            ~OutParam()
+            ~OutParam() CI0_NOEXCEPT(true)
             {
                 if (m_pSelf)
                 {
@@ -74,12 +79,12 @@ namespace ci0 {
                     assert(!m_pObject);
                 }
             }
-            explicit OutParam(This& self)
+            explicit OutParam(This& self) CI0_NOEXCEPT(true)
                 : m_pSelf(&self)
                 , m_pObject(self.m_pObject)
             {
             }
-            OutParam(OutParam&& rhs)
+            OutParam(OutParam&& rhs) CI0_NOEXCEPT(true)
                 : m_pSelf(rhs.m_pSelf)
                 , m_pObject(rhs.m_pObject)
             {
@@ -87,12 +92,12 @@ namespace ci0 {
                 rhs.m_pObject = nullptr;
             }
 
-            operator Object* const*() const
+            operator Object* const*() const CI0_NOEXCEPT(true)
             {
                 assert(m_pSelf);
                 return &m_pObject;
             }
-            operator Object**()
+            operator Object**() CI0_NOEXCEPT(true)
             {
                 assert(m_pSelf);
                 return &m_pObject;
@@ -100,107 +105,124 @@ namespace ci0 {
         };
 
     public:
-        ~UniquePtr()
+        ~UniquePtr() CI0_NOEXCEPT(true)
         {
             Release();
         }
-        UniquePtr()
+        UniquePtr() CI0_NOEXCEPT(true)
             : m_pObject()
         {
         }
-        UniquePtr(nullptr_t)
+        UniquePtr(nullptr_t) CI0_NOEXCEPT(true)
             : m_pObject()
         {
         }
-        UniquePtr(This&& rhs)
+        UniquePtr(This&& rhs) CI0_NOEXCEPT(true)
         {
             Assign(std::move(rhs));
         }
-        UniquePtr& operator=(This&& rhs)
+        template <class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+        UniquePtr(UniquePtr<RhsObject, RhsDeleteObject>&& rhs) CI0_NOEXCEPT(true)
+        {
+            Assign(std::move(rhs));
+        }
+        UniquePtr& operator=(This&& rhs) CI0_NOEXCEPT(true)
         {
             if (this != &rhs)
             {
-                Assign(std::move<This>(rhs));
-                return *this;
+                Release();
+                Assign(std::move(rhs));
             }
+            return *this;
+        }
+        template <class RhsObject, void(*RhsDeleteObject)(RhsObject*)>
+        UniquePtr& operator=(UniquePtr<RhsObject, RhsDeleteObject>&& rhs) CI0_NOEXCEPT(true)
+        {
+            Release();
+            Assign(std::move(rhs));
+            return *this;
         }
 
-        explicit UniquePtr(Object* pObject)
+        explicit UniquePtr(Object* pObject) CI0_NOEXCEPT(true)
             : m_pObject(pObject)
         {
         }
 
-        Object& operator*() const
+        Object& operator*() const CI0_NOEXCEPT(true)
         {
             return *m_pObject;
         }
-        Object* operator->() const
+        Object* operator->() const CI0_NOEXCEPT(true)
         {
             return m_pObject;
         }
 
-        operator Object*() const
+        operator Object*() const CI0_NOEXCEPT(true)
         {
             return m_pObject;
         }
-        explicit operator bool() const
+        explicit operator bool() const CI0_NOEXCEPT(true)
         {
             return !!m_pObject;
         }
         template <class Type>
-        explicit operator Type*() const
+        explicit operator Type*() const CI0_NOEXCEPT(true)
         {
             return static_cast<Type*>(m_pObject);
         }
 
-        Object* const& get() const
+        Object* const& get() const CI0_NOEXCEPT(true)
         {
             return m_pObject;
         }
-        OutParam out()
+        OutParam out() CI0_NOEXCEPT(true)
         {
             return OutParam(*this);
         }
-        This& attach(Object* pObject)
+        This& attach(Object* pObject) CI0_NOEXCEPT(true)
         {
             assert(m_pObject != pObject);
             Release();
             m_pObject = pObject;
             return *this;
         }
-        Object* detach()
+        Object* detach() CI0_NOEXCEPT(true)
         {
             Object* pObject = m_pObject;
             m_pObject = nullptr;
             return pObject;
         }
         // note: present for STL/boost compatibility, but you should prefer to call detach() instead
-        Object* release()
+        Object* release() CI0_NOEXCEPT(true)
         {
             return detach();
         }
-        This& swap(This& rhs)
+        This& swap(This& rhs) CI0_NOEXCEPT(true)
         {
-            std::swap(m_pObject, rhs.m_pObject);
+            Object* pObject = m_pObject;
+            m_pObject = rhs.m_pObject;
+            rhs.m_pObject = pObject;
             return *this;
         }
-        This& swap(This&& rhs)
+        This& swap(This&& rhs) CI0_NOEXCEPT(true)
         {
-            std::swap(m_pObject, rhs.m_pObject);
+            Object* pObject = m_pObject;
+            m_pObject = rhs.m_pObject;
+            rhs.m_pObject = pObject;
             return *this;
         }
-        This& reset()
+        This& reset() CI0_NOEXCEPT(true)
         {
             Release();
             return *this;
         }
         // note: present for STL/boost compatibility, but you should prefer to call attach() instead
-        This& reset(Object* pObject)
+        This& reset(Object* pObject) CI0_NOEXCEPT(true)
         {
             return attach(pObject);
         }
         template <class Other>
-        UniquePtr<Other> move_as()
+        UniquePtr<Other> move_as() CI0_NOEXCEPT(true)
         {
             UniquePtr<Other> pOther(static_cast<Other*>(m_pObject));
             m_pObject = nullptr;
