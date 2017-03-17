@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <utility>
+#include "Noexcept.h"
 
 #if _MSC_VER
 #pragma warning(push)
@@ -129,7 +130,7 @@ namespace ci0 {
         // DO NOT refactor or collapse these with a template argument like CastToInterface.
         //
         // The difference is: (cryptic)
-        //      error: no matching member function for call to 'copy_init_implicit'
+        //      error: no matching member function for call to 'InitCopy_ImplicitCast'
         //      note: candidate template ignored: substitution failure
         // versus: (clear)
         //      error: assigning to 'Derived *' from incompatible type 'Base *'
@@ -233,16 +234,16 @@ namespace ci0 {
 
 
     public:
-        ~ClonePtr()
+        ~ClonePtr() CI0_NOEXCEPT(true)
         {
             Release();
         }
 
-        ClonePtr()
+        ClonePtr() CI0_NOEXCEPT(true)
         {
             InitNull();
         }
-        ClonePtr(nullptr_t)
+        ClonePtr(nullptr_t) CI0_NOEXCEPT(true)
         {
             InitNull();
         }
@@ -259,7 +260,7 @@ namespace ci0 {
         {
             InitCopy_ImplicitCast(rhs);
         }
-        ClonePtr(This&& rhs)
+        ClonePtr(This&& rhs) // cannot guarantee noexcept
         {
             InitMove_ImplicitCast(std::move(rhs));
         }
@@ -370,7 +371,7 @@ namespace ci0 {
 
         // Copy or move a concrete object in.
         template <class Object>
-        This& Assign(Object&& obj)
+        This& assign(Object&& obj)
         {
             Release();
             AssignObjectValue(std::forward<Object>(obj), CastImplicit());
@@ -388,7 +389,7 @@ namespace ci0 {
         //      // OK, because CommonBase unambiguously reachable from Base
         //      pCommonBase.Assign( Thing(), [](Thing* pThing) { return (Base1*)pThing; })
         template <class Object, class CastToInterface>
-        This& Assign(Object&& obj, CastToInterface&& castToInterface)
+        This& assign(Object&& obj, CastToInterface&& castToInterface)
         {
             Release();
             AssignObjectValue(std::forward<Object>(obj), std::forward<CastToInterface>(castToInterface));
@@ -398,7 +399,7 @@ namespace ci0 {
         // Takes ownership of pObject.  Allows initialization without copying.
         //      ClonePtr<Base> pBase = ClonePtr<Base>().Attach(new Derived(...));
         template <class Object>
-        This& attach(Object* pObject)
+        This& attach(Object* pObject) CI0_NOEXCEPT(true)
         {
             Release();
             m_pObject = (char*)pObject;
@@ -423,7 +424,7 @@ namespace ci0 {
             return *this;
         }
 
-        This& reset()
+        This& reset() CI0_NOEXCEPT(true)
         {
             Release();
             InitNull();
@@ -431,7 +432,7 @@ namespace ci0 {
         }
         // note: present for STL/boost compatibility, but you should prefer to call attach() instead
         template <class Object>
-        This& reset(Object* pObject)
+        This& reset(Object* pObject) CI0_NOEXCEPT(true)
         {
             return attach(pObject);
         }
@@ -451,30 +452,30 @@ namespace ci0 {
             return pOther;
         }
 
-        Interface* const& get() const
+        Interface* const& get() const CI0_NOEXCEPT(true)
         {
             return m_pInterface;
         }
 
-        Interface& operator*() const
+        Interface& operator*() const CI0_NOEXCEPT(true)
         {
             return *m_pInterface;
         }
-        Interface* operator->() const
+        Interface* operator->() const CI0_NOEXCEPT(true)
         {
             return m_pInterface;
         }
 
-        operator Interface*() const
+        operator Interface*() const CI0_NOEXCEPT(true)
         {
             return m_pInterface;
         }
-        explicit operator bool() const
+        explicit operator bool() const CI0_NOEXCEPT(true)
         {
             return !!m_pInterface;
         }
         template <class Type>
-        explicit operator Type*() const
+        explicit operator Type*() const CI0_NOEXCEPT(true)
         {
             return static_cast<Type*>(m_pInterface);
         }
