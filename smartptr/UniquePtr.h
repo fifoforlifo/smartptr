@@ -287,4 +287,11 @@ namespace ci0 {
     {
         lhs.swap(rhs);
     }
+
+    template <class Object, class... Args>
+    UniquePtr<Object> MakeUnique(Args&&... args)
+    {
+        Object* pObject = new Object(std::forward<Args>(args)...);
+        return UniquePtr<Object>(pObject);
+    }
 }

@@ -74,7 +74,7 @@ void TestUniquePtr()
         ci0::UniquePtr<Base> pBase2(std::move(pDerived));
         pBase = std::move(pBase2);
         pBase2 = std::move(pDerived);
-        pBase2 = ci0::UniquePtr<Derived>(new Derived(6, 7));
+        pBase2 = ci0::MakeUnique<Derived>(6, 7);
 
         bool testComparisons = false;
         testComparisons = (pBase == pBase2);
