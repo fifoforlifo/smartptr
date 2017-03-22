@@ -1,5 +1,6 @@
 #pragma once
 #include <stddef.h>
+#include <stdint.h>
 #include <assert.h>
 #include <algorithm>
 #include <utility>
@@ -223,10 +224,19 @@ namespace ci0 {
             rhs.InitNull();
         }
 
+#if defined(__GNUC__)
+// Silence a spurious warning that an object is being placement-new'd into a too-small buffer; the placement-new is appropriately guarded (guard is even statically evaluatable!).
+// Actual warning text on:
+//      warning: placement new constructing an object of type 'Obj {aka Thing}' and size '24' in a region of type 'char [8]' and size '8'[-Wplacement-new=]
+//          Obj* pObject = new (m_sbo) Obj(std::forward<Object>(obj));
+//                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wplacement-new"
+#endif
         // Takes an Object that implements Interface, allocates a second instance of
         // that Object, and either copy or move constructs into the second instance.
         template <class Object, class CastToInterface>
-        bool AssignObjectValue(Object&& obj, CastToInterface&& castToInterface)
+        void AssignObjectValue(Object&& obj, CastToInterface&& castToInterface)
         {
             typedef typename std::decay<Object>::type Obj;
             if (sizeof(Obj) <= SboSize)
@@ -242,8 +252,10 @@ namespace ci0 {
                 m_pObject = (char*)pObject;
             }
             m_pCloner = &ClonePtrCloner<Obj>::Instance;
-            return true;
         }
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
         bool IsObjectInSboBuffer() const
         {
@@ -392,7 +404,7 @@ namespace ci0 {
         This& assign(Object&& obj)
         {
             Release();
-            AssignObjectValue(std::forward<Object>(obj), CastImplicit());
+            AssignObjectValue(std::forward<Object>(obj), CastImplicit<Object, Interface>());
             return *this;
         }
 
@@ -619,14 +631,13 @@ namespace ci0 {
         // Takes an Object that implements Interface, allocates a second instance of
         // that Object, and either copy or move constructs into the second instance.
         template <class Object, class CastToInterface>
-        bool AssignObjectValue(Object&& obj, CastToInterface&& castToInterface)
+        void AssignObjectValue(Object&& obj, CastToInterface&& castToInterface)
         {
             typedef typename std::decay<Object>::type Obj;
             Obj* pObject = new Obj(std::forward<Object>(obj));
             m_pInterface = castToInterface(pObject);
             m_pObject = (char*)pObject;
             m_pCloner = &ClonePtrCloner<Obj>::Instance;
-            return true;
         }
 
         bool IsObjectInSboBuffer() const
@@ -775,7 +786,7 @@ namespace ci0 {
         This& assign(Object&& obj)
         {
             Release();
-            AssignObjectValue(std::forward<Object>(obj), CastImplicit());
+            AssignObjectValue(std::forward<Object>(obj), CastImplicit<Object, Interface>());
             return *this;
         }
 
