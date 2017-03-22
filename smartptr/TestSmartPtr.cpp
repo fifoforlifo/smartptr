@@ -130,7 +130,7 @@ void TestClonePtr()
         ci0::ClonePtr<Base> pBase1(der);
         BasePtr16 pBase2 = pBase1;
         ci0::ClonePtr<Base> pBase3 = std::move(pBase2);
-        ci0::ClonePtr<Base> pBase4(der);
+        ci0::ClonePtr<Base, 0> pBase4(der);
         pBase2 = pBase4;
         pBase2 = std::move(pBase4);
         pBase3 = pBase2;
