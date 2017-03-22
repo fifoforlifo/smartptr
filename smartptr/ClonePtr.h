@@ -16,9 +16,15 @@ namespace ci0 {
     struct IClonePtrCloner
     {
         const size_t sizeofObject;
+        const bool isMoveNoexcept;
 
         virtual ~IClonePtrCloner() {}
-        IClonePtrCloner(size_t sizeofObject_) : sizeofObject(sizeofObject_) {}
+        IClonePtrCloner(size_t sizeofObject_, bool isMoveNoexcept_)
+            : sizeofObject(sizeofObject_)
+            , isMoveNoexcept(isMoveNoexcept_)
+        {
+        }
+
         virtual char* Copy(const char* pRhsObj, char* pSbo, size_t sboSize) const = 0;
         virtual char* Move(char* pRhsObj, char* pSbo, size_t sboSize) const = 0;
         virtual void Destruct(char* pObj, char* pSbo, size_t sboSize) const = 0;
@@ -28,23 +34,30 @@ namespace ci0 {
     struct ClonePtrCloner : public IClonePtrCloner
     {
         ClonePtrCloner()
-            : IClonePtrCloner(sizeof(Object))
+            : IClonePtrCloner(sizeof(Object), std::is_nothrow_move_constructible<Object>::value)
         {
         }
 
         virtual char* Copy(const char* pRhsObj, char* pSbo, size_t sboSize) const
         {
             const Object& rhs = *(Object*)pRhsObj;
-            if (sizeof(Object) <= sboSize)
+
+            // In ClonePtr<>, the copy-assignment operator must copy-then-move to be exception-safe.
+            // This requires the move to be noexcept.
+            if (std::is_nothrow_move_constructible<Object>::value)
             {
-                Object* pNew = new (pSbo) Object(rhs);
-                return (char*)pNew;
+                if (sizeof(Object) <= sboSize)
+                {
+                    Object* pNew = new (pSbo) Object(rhs);
+                    return (char*)pNew;
+                }
             }
 
             Object* pNew = new Object(rhs);
             return (char*)pNew;
         }
 
+        // Move() is only called when isMoveNoexcept is true.
         virtual char* Move(char* pRhsObj, char* pSbo, size_t sboSize) const
         {
             Object& rhs = *(Object*)pRhsObj;
@@ -163,13 +176,13 @@ namespace ci0 {
         template <class RhsInterface, size_t RhsSboSize>
         void InitMove_ImplicitCast(ClonePtr<RhsInterface, RhsSboSize>&& rhs)
         {
-            InitNull(); // reset members here, in case Move() throws
             if (!rhs.m_pInterface)
             {
+                InitNull();
                 return;
             }
 
-            if (rhs.IsObjectInSboBuffer())
+            if (rhs.IsObjectInSboBuffer() && rhs.m_pCloner->isMoveNoexcept)
             {
                 // RHS Object lives in its SBO; we cannot steal the object pointer
                 m_pObject = rhs.m_pCloner->Move(rhs.m_pObject, m_sbo, SboSize);
@@ -188,13 +201,13 @@ namespace ci0 {
         template <class RhsInterface, size_t RhsSboSize>
         void InitMove_StaticCast(ClonePtr<RhsInterface, RhsSboSize>&& rhs)
         {
-            InitNull(); // reset members here, in case Move() throws
             if (!rhs.m_pInterface)
             {
+                InitNull();
                 return;
             }
 
-            if (rhs.IsObjectInSboBuffer())
+            if (rhs.IsObjectInSboBuffer() && rhs.m_pCloner->isMoveNoexcept)
             {
                 // RHS Object lives in its SBO; invoke the object's move constructor.
                 m_pObject = rhs.m_pCloner->Move(rhs.m_pObject, m_sbo, SboSize);
