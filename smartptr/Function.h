@@ -601,29 +601,29 @@ namespace ci0 {
         {
             InitCopy(rhs);
         }
+        template <size_t RhsSboSize>
+        FuncRef(const Function<TSig, RhsSboSize>& func) CI0_NOEXCEPT(true)
+        {
+            InitFunction(func);
+        }
+        template <size_t RhsSboSize>
+        FuncRef(const Function<TSig, RhsSboSize>&& func) CI0_NOEXCEPT(true)
+        {
+            InitFunction(func);
+        }
+        template <size_t RhsSboSize>
+        FuncRef(Function<TSig, RhsSboSize>& func) CI0_NOEXCEPT(true)
+        {
+            InitFunction(func);
+        }
+        template <size_t RhsSboSize>
+        FuncRef(Function<TSig, RhsSboSize>&& func) CI0_NOEXCEPT(true)
+        {
+            InitFunction(func);
+        }
         FuncRef(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
         {
             InitRawFn(rawFn);
-        }
-        template <size_t RhsSboSize>
-        FuncRef(const Function<TSig, RhsSboSize>& func)
-        {
-            InitFunction(func);
-        }
-        template <size_t RhsSboSize>
-        FuncRef(const Function<TSig, RhsSboSize>&& func)
-        {
-            InitFunction(func);
-        }
-        template <size_t RhsSboSize>
-        FuncRef(Function<TSig, RhsSboSize>& func)
-        {
-            InitFunction(func);
-        }
-        template <size_t RhsSboSize>
-        FuncRef(Function<TSig, RhsSboSize>&& func)
-        {
-            InitFunction(func);
         }
         template <class RealObj>
         FuncRef(RealObj&& realObj) CI0_NOEXCEPT(true)
@@ -656,6 +656,30 @@ namespace ci0 {
             InitCopy(rhs);
             return *this;
         }
+        template <size_t RhsSboSize>
+        This& operator=(const Function<TSig, RhsSboSize>& func) CI0_NOEXCEPT(true)
+        {
+            InitFunction(func);
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(const Function<TSig, RhsSboSize>&& func) CI0_NOEXCEPT(true)
+        {
+            InitFunction(func);
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(Function<TSig, RhsSboSize>& func) CI0_NOEXCEPT(true)
+        {
+            InitFunction(func);
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(Function<TSig, RhsSboSize>&& func) CI0_NOEXCEPT(true)
+        {
+            InitFunction(func);
+            return *this;
+        }
         This& operator=(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
         {
             AssignRaw(rawFn);
@@ -665,12 +689,6 @@ namespace ci0 {
         This& operator=(RealObj&& realObj) CI0_NOEXCEPT(true)
         {
             InitFuncObj(static_cast<RealObj&&>(realObj));
-            return *this;
-        }
-        template <size_t RhsSboSize>
-        This& operator=(const Function<TSig, RhsSboSize>& func) CI0_NOEXCEPT(true)
-        {
-            InitFunction(func);
             return *this;
         }
     };

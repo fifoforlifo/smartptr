@@ -342,6 +342,8 @@ void TestFunction(int argc)
 
         CombineFnRef fnrefA = combineFnD;
         printf("%d = fnrefA(%d, %d)\n", fnrefA(1, 2), 1, 2);
+        fnrefA = combineFnA;
+        printf("%d = fnrefA(%d, %d)\n", fnrefA(1, 2), 1, 2);
 
 #if ENABLE_MISUSE
         combineFnC = [&](int x, int y) { return x + y + z + 1; };
@@ -376,6 +378,8 @@ void TestFunction(int argc)
         printf("%d = combineFnD(%d, %d)\n", combineFnD(1, 2), 1, 2);
 
         CombineFnRef fnrefA = combineFnD;
+        printf("%d = fnrefA(%d, %d)\n", fnrefA(1, 2), 1, 2);
+        fnrefA = combineFnA;
         printf("%d = fnrefA(%d, %d)\n", fnrefA(1, 2), 1, 2);
 
 #if ENABLE_MISUSE
