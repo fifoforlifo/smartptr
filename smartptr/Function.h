@@ -3,6 +3,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <utility>
+#include <new>
+
+#define FUNCREF_ENABLE_DEBUG 01
 
 #if _MSC_VER
 #pragma warning(push)
@@ -99,75 +102,142 @@ namespace ci0 {
         typedef decltype(SelectFuncBase((TSig*)nullptr)) Base;
         typedef FuncRef<TSig> This;
 
+    private:
+#if FUNCREF_ENABLE_DEBUG
+        struct IRealObjPtr
+        {
+            // introduce a vtable, so that the debugger can display the derived type
+            virtual void Dummy() {}
+        };
+        template <class RealObj>
+        struct RealObjPtr : IRealObjPtr
+        {
+            const RealObj* pObj;
+
+            RealObjPtr(const RealObj* pObj_)
+                : pObj(pObj_)
+            {
+            }
+        };
+        struct RealObjRawFnPtr : IRealObjPtr
+        {
+            typename Base::RawFn rawFn;
+
+            RealObjRawFnPtr(typename Base::RawFn rawFn_)
+                : rawFn(rawFn_)
+            {
+            }
+        };
+        struct RealObjPtrBuffer
+        {
+            void* storage[2];
+        };
+
+        IRealObjPtr* m_pRealObj;
+        RealObjPtrBuffer m_realObjPtrBuffer;
+#endif
+
+        void InitNull()
+        {
+            Base::BaseInitNull();
+#if FUNCREF_ENABLE_DEBUG
+            m_pRealObj = nullptr;
+#endif
+        }
+        void AssignCopy(const This& rhs)
+        {
+            Base::BaseAssignCopy(rhs);
+#if FUNCREF_ENABLE_DEBUG
+            m_realObjPtrBuffer = rhs.m_realObjPtrBuffer;
+            m_pRealObj = (IRealObjPtr*)m_realObjPtrBuffer.storage;
+#endif
+        }
+        void AssignRawFn(typename Base::RawFn rawFn)
+        {
+            Base::BaseAssignRaw(rawFn);
+#if FUNCREF_ENABLE_DEBUG
+            m_pRealObj = new (m_realObjPtrBuffer.storage) RealObjRawFnPtr(rawFn);
+#endif
+        }
+        template <class FuncObj>
+        void AssignFuncObj(FuncObj& funcObj)
+        {
+            Base::BaseAssignFuncObj(static_cast<FuncObj&&>(funcObj));
+#if FUNCREF_ENABLE_DEBUG
+            static_assert(sizeof(RealObjPtr<FuncObj>) <= sizeof(m_realObjPtrBuffer.storage), "");
+            m_pRealObj = new (m_realObjPtrBuffer.storage) RealObjPtr<FuncObj>(&funcObj);
+#endif
+        }
+
     public:
         FuncRef()
         {
-            Base::BaseInitNull();
+            InitNull();
         }
         FuncRef(std::nullptr_t)
         {
-            Base::BaseInitNull();
+            InitNull();
         }
         FuncRef(const This& rhs)
         {
-            Base::BaseAssignCopy(rhs);
+            AssignCopy(rhs);
         }
         FuncRef(const This&& rhs)
         {
-            Base::BaseAssignCopy(rhs);
+            AssignCopy(rhs);
         }
         FuncRef(This& rhs)
         {
-            Base::BaseAssignCopy(rhs);
+            AssignCopy(rhs);
         }
         FuncRef(This&& rhs)
         {
-            Base::BaseAssignCopy(rhs);
+            AssignCopy(rhs);
         }
         FuncRef(typename Base::RawFn rawFn)
         {
-            Base::BaseAssignRaw(rawFn);
+            AssignRawFn(rawFn);
         }
         template <class FuncObj>
-        FuncRef(FuncObj&& funcObj)
+        FuncRef(FuncObj& funcObj)
         {
-            Base::BaseAssignFuncObj(static_cast<FuncObj&&>(funcObj));
+            AssignFuncObj(funcObj);
         }
 
         This& operator=(std::nullptr_t)
         {
-            Base::BaseInitNull();
+            InitNull();
             return *this;
         }
         This& operator=(const This& rhs)
         {
-            Base::BaseAssignCopy(rhs);
+            AssignCopy(rhs);
             return *this;
         }
         This& operator=(const This&& rhs)
         {
-            Base::BaseAssignCopy(rhs);
+            AssignCopy(rhs);
             return *this;
         }
         This& operator=(This& rhs)
         {
-            Base::BaseAssignCopy(rhs);
+            AssignCopy(rhs);
             return *this;
         }
         This& operator=(This&& rhs)
         {
-            Base::BaseAssignCopy(rhs);
+            AssignCopy(rhs);
             return *this;
         }
         This& operator=(typename Base::RawFn rawFn)
         {
-            Base::BaseAssignRaw(rawFn);
+            AssignRaw(rawFn);
             return *this;
         }
         template <class FuncObj>
-        This& operator=(FuncObj&& funcObj)
+        This& operator=(FuncObj& funcObj)
         {
-            Base::BaseAssignFuncObj(static_cast<FuncObj&&>(funcObj));
+            AssignFuncObj(funcObj);
             return *this;
         }
     };

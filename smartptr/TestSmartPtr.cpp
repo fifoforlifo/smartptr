@@ -274,7 +274,16 @@ void TestIntrusivePtr()
     }
 }
 
-void TestFuncRef()
+template <class Foo>
+void ForceNoOpt(int argc, Foo&& foo)
+{
+    if (argc > 10)
+    {
+        foo = nullptr;
+    }
+}
+
+void TestFuncRef(int argc)
 {
     {
         typedef ci0::FuncRef<int(int, int)> CombineFnRef;
@@ -285,17 +294,23 @@ void TestFuncRef()
         combineFnB = combineFnA;
         printf("%d = combineFnB(%d, %d)\n", combineFnB(1, 2), 1, 2);
         int z = 3;
-        CombineFnRef combineFnC = [&](int x, int y) { return x + y + z; };
+        auto funcC = [&](int x, int y) { return x + y + z; };
+        CombineFnRef combineFnC = funcC;
+        ForceNoOpt(argc, combineFnC);
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
+#if ENABLE_MISUSE
+        combineFnC = [&](int x, int y) { return x + y + z + 1; };
+        printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
+#endif
     }
 }
 
 
-int main()
+int main(int argc, char** argv)
 {
     TestUniquePtr();
     TestClonePtr();
     TestIntrusivePtr();
-    TestFuncRef();
+    TestFuncRef(argc);
     return 0;
 }
