@@ -137,6 +137,7 @@ namespace ci0 {
     public:
         typedef decltype(SelectFuncBase((TSig*)nullptr)) Base;
         typedef Function<TSig, SboSize> This;
+        template <class, size_t> friend class Function;
 
     private:
         // note: m_pDebug is placed first & in the derived class, for direct access in the debugger (fewer node expansions)
@@ -157,11 +158,12 @@ namespace ci0 {
         }
 
 #if FUNCTION_ENABLE_DEBUG
-        void InitDebugPtr(const This& rhs)
+        template <size_t RhsSboSize>
+        void InitDebugPtr(const Function<TSig, RhsSboSize>& rhs)
         {
             // TODO: make this typesafe
             this->m_debugBuffer.storage[0] = rhs.m_debugBuffer.storage[0];
-            this->m_debugBuffer.storage[1] = m_pObj;
+            this->m_debugBuffer.storage[1] = this->m_pObj;
             m_pDebug = (typename Base::IDebug*)this->m_debugBuffer.storage;
         }
 #endif
@@ -173,21 +175,37 @@ namespace ci0 {
             m_pDebug = nullptr;
 #endif
         }
-        void InitCopy(const This& rhs)
+        template <size_t RhsSboSize>
+        void InitCopy(const Function<TSig, RhsSboSize>& rhs)
         {
             InitNull(); // reset members here, in case Copy() throws
             if (!rhs.m_pObj)
             {
                 return;
             }
-            this->m_pObj = rhs.m_pCloner->Copy(rhs.m_pObj, m_sbo, SboSize);
+
+            // An object has a non-NULL cloner.
+            if (rhs.m_pCloner)
+            {
+                this->m_pObj = rhs.m_pCloner->Copy(rhs.m_pObj, m_sbo, SboSize);
+                this->m_wrapperFn = rhs.m_wrapperFn;
+                m_pCloner = rhs.m_pCloner;
+#if FUNCTION_ENABLE_DEBUG
+                InitDebugPtr(rhs);
+#endif
+                return;
+            }
+
+            // rhs is a RawFn
+            this->m_pObj = rhs.m_pObj;
             this->m_wrapperFn = rhs.m_wrapperFn;
             m_pCloner = rhs.m_pCloner;
 #if FUNCTION_ENABLE_DEBUG
             InitDebugPtr(rhs);
 #endif
         }
-        void InitMove(This&& rhs)
+        template <size_t RhsSboSize>
+        void InitMove(const Function<TSig, RhsSboSize>&& rhs)
         {
             if (!rhs.m_pObj)
             {
@@ -282,6 +300,26 @@ namespace ci0 {
         {
             InitMove(static_cast<This&&>(rhs));
         }
+        template <size_t RhsSboSize>
+        Function(const Function<TSig, RhsSboSize>& rhs)
+        {
+            InitCopy(rhs);
+        }
+        template <size_t RhsSboSize>
+        Function(const Function<TSig, RhsSboSize>&& rhs)
+        {
+            InitCopy(rhs);
+        }
+        template <size_t RhsSboSize>
+        Function(Function<TSig, RhsSboSize>& rhs)
+        {
+            InitCopy(rhs);
+        }
+        template <size_t RhsSboSize>
+        Function(Function<TSig, RhsSboSize>&& rhs) CI0_NOEXCEPT(true)
+        {
+            InitMove(static_cast<Function<TSig, RhsSboSize>&&>(rhs));
+        }
         Function(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
         {
             InitRawFn(rawFn);
@@ -317,6 +355,30 @@ namespace ci0 {
             InitMove(static_cast<This&&>(rhs));
             return *this;
         }
+        template <size_t RhsSboSize>
+        This& operator=(const Function<TSig, RhsSboSize>& rhs)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(const Function<TSig, RhsSboSize>&& rhs)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(Function<TSig, RhsSboSize>& rhs)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(Function<TSig, RhsSboSize>&& rhs) CI0_NOEXCEPT(true)
+        {
+            InitMove(static_cast<Function<TSig, RhsSboSize>&&>(rhs));
+            return *this;
+        }
         This& operator=(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
         {
             InitRawFn(rawFn);
@@ -337,6 +399,7 @@ namespace ci0 {
     public:
         typedef decltype(SelectFuncBase((TSig*)nullptr)) Base;
         typedef Function<TSig, 0u> This;
+        template <class, size_t> friend class Function;
 
     private:
         // note: m_pDebug is placed first & in the derived class, for direct access in the debugger (fewer node expansions)
@@ -356,11 +419,12 @@ namespace ci0 {
         }
 
 #if FUNCTION_ENABLE_DEBUG
-        void InitDebugPtr(const This& rhs)
+        template <size_t RhsSboSize>
+        void InitDebugPtr(const Function<TSig, RhsSboSize>& rhs)
         {
             // TODO: make this typesafe
             this->m_debugBuffer.storage[0] = rhs.m_debugBuffer.storage[0];
-            this->m_debugBuffer.storage[1] = m_pObj;
+            this->m_debugBuffer.storage[1] = this->m_pObj;
             m_pDebug = (typename Base::IDebug*)this->m_debugBuffer.storage;
         }
 #endif
@@ -380,7 +444,21 @@ namespace ci0 {
             {
                 return;
             }
-            this->m_pObj = rhs.m_pCloner->Copy(rhs.m_pObj, nullptr, 0u);
+
+            // An object has a non-NULL cloner.
+            if (rhs.m_pCloner)
+            {
+                this->m_pObj = rhs.m_pCloner->Copy(rhs.m_pObj, nullptr, 0u);
+                this->m_wrapperFn = rhs.m_wrapperFn;
+                m_pCloner = rhs.m_pCloner;
+#if FUNCTION_ENABLE_DEBUG
+                InitDebugPtr(rhs);
+#endif
+                return;
+            }
+
+            // rhs is a RawFn
+            this->m_pObj = rhs.m_pObj;
             this->m_wrapperFn = rhs.m_wrapperFn;
             m_pCloner = rhs.m_pCloner;
 #if FUNCTION_ENABLE_DEBUG
@@ -473,6 +551,26 @@ namespace ci0 {
         {
             InitMove(static_cast<This&&>(rhs));
         }
+        template <size_t RhsSboSize>
+        Function(const Function<TSig, RhsSboSize>& rhs)
+        {
+            InitCopy(rhs);
+        }
+        template <size_t RhsSboSize>
+        Function(const Function<TSig, RhsSboSize>&& rhs)
+        {
+            InitCopy(rhs);
+        }
+        template <size_t RhsSboSize>
+        Function(Function<TSig, RhsSboSize>& rhs)
+        {
+            InitCopy(rhs);
+        }
+        template <size_t RhsSboSize>
+        Function(Function<TSig, RhsSboSize>&& rhs) CI0_NOEXCEPT(true)
+        {
+            InitMove(static_cast<Function<TSig, RhsSboSize>&&>(rhs));
+        }
         Function(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
         {
             InitRawFn(rawFn);
@@ -506,6 +604,30 @@ namespace ci0 {
         This& operator=(This&& rhs) CI0_NOEXCEPT(true)
         {
             InitMove(static_cast<This&&>(rhs));
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(const Function<TSig, RhsSboSize>& rhs)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(const Function<TSig, RhsSboSize>&& rhs)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(Function<TSig, RhsSboSize>& rhs)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(Function<TSig, RhsSboSize>&& rhs) CI0_NOEXCEPT(true)
+        {
+            InitMove(static_cast<Function<TSig, RhsSboSize>&&>(rhs));
             return *this;
         }
         This& operator=(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)

@@ -352,6 +352,7 @@ void TestFunction(int argc)
     }
     {
         typedef ci0::Function<int(int, int), 0u> CombineFn;
+        typedef ci0::Function<int(int, int), 16u> CombineFn16;
         typedef ci0::FuncRef<int(int, int)> CombineFnRef;
 
         CombineFn combineFnA =
@@ -381,6 +382,11 @@ void TestFunction(int argc)
         printf("%d = fnrefA(%d, %d)\n", fnrefA(1, 2), 1, 2);
         fnrefA = combineFnA;
         printf("%d = fnrefA(%d, %d)\n", fnrefA(1, 2), 1, 2);
+
+        CombineFn16 combineFnE = combineFnD;
+        printf("%d = combineFnE(%d, %d)\n", combineFnE(1, 2), 1, 2);
+        combineFnE = combineFnB;
+        printf("%d = combineFnE(%d, %d)\n", combineFnE(1, 2), 1, 2);
 
 #if ENABLE_MISUSE
         combineFnC = [&](int x, int y) { return x + y + z + 1; };
