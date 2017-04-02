@@ -309,49 +309,75 @@ void TestFuncRef(int argc)
 
 void TestFunction(int argc)
 {
+    struct JKL
     {
-        typedef ci0::Function<int(int, int)> CombineFnRef;
+        static int Combine(int x, int y)
+        {
+            return 10 + x + y;
+        }
+    };
 
-        CombineFnRef combineFnA =
+    {
+        typedef ci0::Function<int(int, int)> CombineFn;
+        typedef ci0::FuncRef<int(int, int)> CombineFnRef;
+
+        CombineFn combineFnA =
             [](int x, int y)
             {
                 return x + y;
             };
         printf("%d = combineFnA(%d, %d)\n", combineFnA(1, 2), 1, 2);
-        CombineFnRef combineFnB;
+        CombineFn combineFnB;
         combineFnB = combineFnA;
+        printf("%d = combineFnB(%d, %d)\n", combineFnB(1, 2), 1, 2);
+        combineFnB = JKL::Combine;
         printf("%d = combineFnB(%d, %d)\n", combineFnB(1, 2), 1, 2);
         int z = 3;
         auto funcC = [&](int x, int y) { return x + y + z; };
-        CombineFnRef combineFnC = funcC;
+        CombineFn combineFnC = funcC;
         ForceNoOpt(argc, combineFnC);
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
-        CombineFnRef combineFnD = std::move(funcC);
+        CombineFn combineFnD = std::move(funcC);
         printf("%d = combineFnD(%d, %d)\n", combineFnD(1, 2), 1, 2);
+
+        CombineFnRef fnrefA = combineFnD;
+        printf("%d = fnrefA(%d, %d)\n", fnrefA(1, 2), 1, 2);
+
 #if ENABLE_MISUSE
         combineFnC = [&](int x, int y) { return x + y + z + 1; };
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
 #endif
     }
     {
-        typedef ci0::Function<int(int, int), 0u> CombineFnRef;
+        typedef ci0::Function<int(int, int), 0u> CombineFn;
+        typedef ci0::FuncRef<int(int, int)> CombineFnRef;
 
-        CombineFnRef combineFnA =
+        CombineFn combineFnA =
             [](int x, int y)
             {
                 return x + y;
             };
         printf("%d = combineFnA(%d, %d)\n", combineFnA(1, 2), 1, 2);
-        CombineFnRef combineFnB;
+        CombineFn combineFnB;
         combineFnB = combineFnA;
         printf("%d = combineFnB(%d, %d)\n", combineFnB(1, 2), 1, 2);
+        combineFnB = JKL::Combine;
+        printf("%d = combineFnB(%d, %d)\n", combineFnB(1, 2), 1, 2);
         int z = 3;
-        auto funcC = [&](int x, int y) { return x + y + z; };
-        CombineFnRef combineFnC = funcC;
+        auto funcC =
+            [&](int x, int y)
+            {
+                return x + y + z;
+            };
+        CombineFn combineFnC = funcC;
         ForceNoOpt(argc, combineFnC);
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
-        CombineFnRef combineFnD = std::move(combineFnC);
+        CombineFn combineFnD = std::move(combineFnC);
         printf("%d = combineFnD(%d, %d)\n", combineFnD(1, 2), 1, 2);
+
+        CombineFnRef fnrefA = combineFnD;
+        printf("%d = fnrefA(%d, %d)\n", fnrefA(1, 2), 1, 2);
+
 #if ENABLE_MISUSE
         combineFnC = [&](int x, int y) { return x + y + z + 1; };
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);

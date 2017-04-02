@@ -8,7 +8,7 @@
 #include "Noexcept.h"
 #include "ClonePtr.h"
 
-#define FUNCREF_ENABLE_DEBUG 01
+#define FUNCTION_ENABLE_DEBUG 01
 
 #if _MSC_VER
 #pragma warning(push)
@@ -35,10 +35,44 @@ namespace ci0 {
             }
         };
 
+#if FUNCTION_ENABLE_DEBUG
+        struct IDebug
+        {
+            // introduce a vtable, so that the debugger can display the derived type
+            virtual void Dummy() {}
+        };
+        template <class RealObj>
+        struct DebugObj : IDebug
+        {
+            const RealObj* pObj;
+
+            DebugObj(const RealObj* pObj_)
+                : pObj(pObj_)
+            {
+            }
+        };
+        struct DebugRawFn : IDebug
+        {
+            typename RawFn rawFn;
+
+            DebugRawFn(RawFn rawFn_)
+                : rawFn(rawFn_)
+            {
+            }
+        };
+        struct DebugBuffer
+        {
+            void* storage[2];
+        };
+#endif
+
     protected:
         typedef TRet(*WrapperFn)(char* pObj, TArgs... args);
         WrapperFn m_wrapperFn;
         char* m_pObj;
+#if FUNCTION_ENABLE_DEBUG
+        DebugBuffer m_debugBuffer;
+#endif
 
     protected:
         void BaseInitNull()
@@ -50,6 +84,9 @@ namespace ci0 {
         {
             m_wrapperFn = rhs.m_wrapperFn;
             m_pObj = rhs.m_pObj;
+#if FUNCTION_ENABLE_DEBUG
+            m_debugBuffer = rhs.m_debugBuffer;
+#endif
         }
         void BaseInitRawFn(RawFn rawFn)
         {
@@ -102,42 +139,9 @@ namespace ci0 {
         typedef Function<TSig, SboSize> This;
 
     private:
-#if FUNCREF_ENABLE_DEBUG
-        struct IDebug
-        {
-            // introduce a vtable, so that the debugger can display the derived type
-            virtual void Dummy() {}
-        };
-        template <class RealObj>
-        struct DebugObj : IDebug
-        {
-            const RealObj* pObj;
-
-            DebugObj(const RealObj* pObj_)
-                : pObj(pObj_)
-            {
-            }
-        };
-        struct DebugRawFn : IDebug
-        {
-            typename Base::RawFn rawFn;
-
-            DebugRawFn(typename Base::RawFn rawFn_)
-                : rawFn(rawFn_)
-            {
-            }
-        };
-        struct DebugBuffer
-        {
-            void* storage[2];
-        };
-#endif
-
-    private:
-        // note: put m_pDebug first so it appears earlier in the debugger
-#if FUNCREF_ENABLE_DEBUG
-        IDebug* m_pDebug;
-        DebugBuffer m_debugBuffer;
+        // note: m_pDebug is placed first & in the derived class, for direct access in the debugger (fewer node expansions)
+#if FUNCTION_ENABLE_DEBUG
+        typename Base::IDebug* m_pDebug;
 #endif
         const IClonePtrCloner* m_pCloner;
         char m_sbo[SboSize];
@@ -152,20 +156,20 @@ namespace ci0 {
             }
         }
 
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
         void InitDebugPtr(const This& rhs)
         {
             // TODO: make this typesafe
-            m_debugBuffer.storage[0] = rhs.m_debugBuffer.storage[0];
-            m_debugBuffer.storage[1] = m_pObj;
-            m_pDebug = (IDebug*)m_debugBuffer.storage;
+            this->m_debugBuffer.storage[0] = rhs.m_debugBuffer.storage[0];
+            this->m_debugBuffer.storage[1] = m_pObj;
+            m_pDebug = (typename Base::IDebug*)this->m_debugBuffer.storage;
         }
 #endif
 
         void InitNull()
         {
             Base::BaseInitNull();
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
             m_pDebug = nullptr;
 #endif
         }
@@ -179,7 +183,7 @@ namespace ci0 {
             this->m_pObj = rhs.m_pCloner->Copy(rhs.m_pObj, m_sbo, SboSize);
             this->m_wrapperFn = rhs.m_wrapperFn;
             m_pCloner = rhs.m_pCloner;
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
             InitDebugPtr(rhs);
 #endif
         }
@@ -197,7 +201,7 @@ namespace ci0 {
                 this->m_pObj = rhs.m_pCloner->Move(rhs.m_pObj, m_sbo, SboSize);
                 this->m_wrapperFn = rhs.m_wrapperFn;
                 m_pCloner = rhs.m_pCloner;
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
                 InitDebugPtr(rhs);
 #endif
                 rhs.InitNull();
@@ -208,7 +212,7 @@ namespace ci0 {
             this->m_pObj = rhs.m_pObj;
             this->m_wrapperFn = rhs.m_wrapperFn;
             m_pCloner = rhs.m_pCloner;
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
             InitDebugPtr(rhs);
 #endif
             rhs.InitNull();
@@ -217,8 +221,8 @@ namespace ci0 {
         {
             Base::BaseInitRawFn(rawFn);
             m_pCloner = nullptr;
-#if FUNCREF_ENABLE_DEBUG
-            m_pDebug = new (m_debugBuffer.storage) DebugRawFn(rawFn);
+#if FUNCTION_ENABLE_DEBUG
+            m_pDebug = new (this->m_debugBuffer.storage) DebugRawFn(rawFn);
 #endif
         }
         template <class RealObj>
@@ -238,9 +242,9 @@ namespace ci0 {
             }
             this->m_wrapperFn = &Base::ObjectAdapter<Obj>::Invoke;
             m_pCloner = &ClonePtrCloner<Obj>::Instance;
-#if FUNCREF_ENABLE_DEBUG
-            static_assert(sizeof(DebugObj<Obj>) <= sizeof(m_debugBuffer.storage), "");
-            m_pDebug = new (m_debugBuffer.storage) DebugObj<Obj>(&realObj);
+#if FUNCTION_ENABLE_DEBUG
+            static_assert(sizeof(DebugObj<Obj>) <= sizeof(this->m_debugBuffer.storage), "");
+            m_pDebug = new (this->m_debugBuffer.storage) DebugObj<Obj>(&realObj);
 #endif
         }
         bool IsObjectInSboBuffer() const
@@ -327,8 +331,6 @@ namespace ci0 {
     };
 
     // Specialization of ClonePtr with SboSize=0.
-    // This version of the class provides strong noexcept guarantee on move and swap.
-    // It also takes less space.
     template <class TSig>
     class Function<TSig, 0u> : public decltype(SelectFuncBase((TSig*)nullptr))
     {
@@ -337,42 +339,9 @@ namespace ci0 {
         typedef Function<TSig, 0u> This;
 
     private:
-#if FUNCREF_ENABLE_DEBUG
-        struct IDebug
-        {
-            // introduce a vtable, so that the debugger can display the derived type
-            virtual void Dummy() {}
-        };
-        template <class RealObj>
-        struct DebugObj : IDebug
-        {
-            const RealObj* pObj;
-
-            DebugObj(const RealObj* pObj_)
-                : pObj(pObj_)
-            {
-            }
-        };
-        struct DebugRawFn : IDebug
-        {
-            typename Base::RawFn rawFn;
-
-            DebugRawFn(typename Base::RawFn rawFn_)
-                : rawFn(rawFn_)
-            {
-            }
-        };
-        struct DebugBuffer
-        {
-            void* storage[2];
-        };
-#endif
-
-    private:
-        // note: put m_pDebug first so it appears earlier in the debugger
-#if FUNCREF_ENABLE_DEBUG
-        IDebug* m_pDebug;
-        DebugBuffer m_debugBuffer;
+        // note: m_pDebug is placed first & in the derived class, for direct access in the debugger (fewer node expansions)
+#if FUNCTION_ENABLE_DEBUG
+        typename Base::IDebug* m_pDebug;
 #endif
         const IClonePtrCloner* m_pCloner;
 
@@ -386,13 +355,13 @@ namespace ci0 {
             }
         }
 
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
         void InitDebugPtr(const This& rhs)
         {
             // TODO: make this typesafe
-            m_debugBuffer.storage[0] = rhs.m_debugBuffer.storage[0];
-            m_debugBuffer.storage[1] = m_pObj;
-            m_pDebug = (IDebug*)m_debugBuffer.storage;
+            this->m_debugBuffer.storage[0] = rhs.m_debugBuffer.storage[0];
+            this->m_debugBuffer.storage[1] = m_pObj;
+            m_pDebug = (typename Base::IDebug*)this->m_debugBuffer.storage;
         }
 #endif
 
@@ -400,7 +369,7 @@ namespace ci0 {
         {
             Base::BaseInitNull();
             m_pCloner = nullptr;
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
             m_pDebug = nullptr;
 #endif
         }
@@ -414,7 +383,7 @@ namespace ci0 {
             this->m_pObj = rhs.m_pCloner->Copy(rhs.m_pObj, nullptr, 0u);
             this->m_wrapperFn = rhs.m_wrapperFn;
             m_pCloner = rhs.m_pCloner;
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
             InitDebugPtr(rhs);
 #endif
         }
@@ -432,7 +401,7 @@ namespace ci0 {
                 this->m_pObj = rhs.m_pCloner->Move(rhs.m_pObj, nullptr, 0u);
                 this->m_wrapperFn = rhs.m_wrapperFn;
                 m_pCloner = rhs.m_pCloner;
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
                 InitDebugPtr(rhs);
 #endif
                 rhs.InitNull();
@@ -443,7 +412,7 @@ namespace ci0 {
             this->m_pObj = rhs.m_pObj;
             this->m_wrapperFn = rhs.m_wrapperFn;
             m_pCloner = rhs.m_pCloner;
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
             InitDebugPtr(rhs);
 #endif
             rhs.InitNull();
@@ -452,8 +421,8 @@ namespace ci0 {
         {
             Base::BaseInitRawFn(rawFn);
             m_pCloner = nullptr;
-#if FUNCREF_ENABLE_DEBUG
-            m_pDebug = new (m_debugBuffer.storage) DebugRawFn(rawFn);
+#if FUNCTION_ENABLE_DEBUG
+            m_pDebug = new (this->m_debugBuffer.storage) DebugRawFn(rawFn);
 #endif
         }
         template <class RealObj>
@@ -465,9 +434,9 @@ namespace ci0 {
             this->m_pObj = (char*)pObj;
             this->m_wrapperFn = &Base::ObjectAdapter<Obj>::Invoke;
             m_pCloner = &ClonePtrCloner<Obj>::Instance;
-#if FUNCREF_ENABLE_DEBUG
-            static_assert(sizeof(DebugObj<Obj>) <= sizeof(m_debugBuffer.storage), "");
-            m_pDebug = new (m_debugBuffer.storage) DebugObj<Obj>(&realObj);
+#if FUNCTION_ENABLE_DEBUG
+            static_assert(sizeof(DebugObj<Obj>) <= sizeof(this->m_debugBuffer.storage), "");
+            m_pDebug = new (this->m_debugBuffer.storage) DebugObj<Obj>(&realObj);
 #endif
         }
         bool IsObjectInSboBuffer() const
@@ -560,60 +529,31 @@ namespace ci0 {
         typedef FuncRef<TSig> This;
 
     private:
-#if FUNCREF_ENABLE_DEBUG
-        struct IDebug
-        {
-            // introduce a vtable, so that the debugger can display the derived type
-            virtual void Dummy() {}
-        };
-        template <class RealObj>
-        struct DebugObj : IDebug
-        {
-            const RealObj* pObj;
-
-            DebugObj(const RealObj* pObj_)
-                : pObj(pObj_)
-            {
-            }
-        };
-        struct DebugRawFn : IDebug
-        {
-            typename Base::RawFn rawFn;
-
-            DebugRawFn(typename Base::RawFn rawFn_)
-                : rawFn(rawFn_)
-            {
-            }
-        };
-        struct DebugBuffer
-        {
-            void* storage[2];
-        };
-
-        IDebug* m_pDebug;
-        DebugBuffer m_debugBuffer;
+        // note: m_pDebug is placed first & in the derived class, for direct access in the debugger (fewer node expansions)
+#if FUNCTION_ENABLE_DEBUG
+        typename Base::IDebug* m_pDebug;
 #endif
 
+    private:
         void InitNull()
         {
             Base::BaseInitNull();
-#if FUNCREF_ENABLE_DEBUG
+#if FUNCTION_ENABLE_DEBUG
             m_pDebug = nullptr;
 #endif
         }
         void InitCopy(const This& rhs)
         {
             Base::BaseInitCopy(rhs);
-#if FUNCREF_ENABLE_DEBUG
-            m_debugBuffer = rhs.m_debugBuffer;
-            m_pDebug = (IDebug*)m_debugBuffer.storage;
+#if FUNCTION_ENABLE_DEBUG
+            m_pDebug = (typename Base::IDebug*)this->m_debugBuffer.storage;
 #endif
         }
         void InitRawFn(typename Base::RawFn rawFn)
         {
             Base::BaseInitRawFn(rawFn);
-#if FUNCREF_ENABLE_DEBUG
-            m_pDebug = new (m_debugBuffer.storage) DebugRawFn(rawFn);
+#if FUNCTION_ENABLE_DEBUG
+            m_pDebug = new (this->m_debugBuffer.storage) DebugRawFn(rawFn);
 #endif
         }
         template <class RealObj>
@@ -621,9 +561,17 @@ namespace ci0 {
         {
             typedef typename std::decay<RealObj>::type Obj;
             Base::BaseInitFuncObj(static_cast<RealObj&&>(realObj));
-#if FUNCREF_ENABLE_DEBUG
-            static_assert(sizeof(DebugObj<Obj>) <= sizeof(m_debugBuffer.storage), "");
-            m_pDebug = new (m_debugBuffer.storage) DebugObj<Obj>(&realObj);
+#if FUNCTION_ENABLE_DEBUG
+            static_assert(sizeof(DebugObj<Obj>) <= sizeof(this->m_debugBuffer.storage), "");
+            m_pDebug = new (this->m_debugBuffer.storage) DebugObj<Obj>(&realObj);
+#endif
+        }
+        template <size_t RhsSboSize>
+        void InitFunction(const Function<TSig, RhsSboSize>& func)
+        {
+            Base::BaseInitCopy(func);
+#if FUNCTION_ENABLE_DEBUG
+            m_pDebug = (typename Base::IDebug*)this->m_debugBuffer.storage;
 #endif
         }
 
@@ -656,6 +604,26 @@ namespace ci0 {
         FuncRef(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
         {
             InitRawFn(rawFn);
+        }
+        template <size_t RhsSboSize>
+        FuncRef(const Function<TSig, RhsSboSize>& func)
+        {
+            InitFunction(func);
+        }
+        template <size_t RhsSboSize>
+        FuncRef(const Function<TSig, RhsSboSize>&& func)
+        {
+            InitFunction(func);
+        }
+        template <size_t RhsSboSize>
+        FuncRef(Function<TSig, RhsSboSize>& func)
+        {
+            InitFunction(func);
+        }
+        template <size_t RhsSboSize>
+        FuncRef(Function<TSig, RhsSboSize>&& func)
+        {
+            InitFunction(func);
         }
         template <class RealObj>
         FuncRef(RealObj&& realObj) CI0_NOEXCEPT(true)
@@ -697,6 +665,12 @@ namespace ci0 {
         This& operator=(RealObj&& realObj) CI0_NOEXCEPT(true)
         {
             InitFuncObj(static_cast<RealObj&&>(realObj));
+            return *this;
+        }
+        template <size_t RhsSboSize>
+        This& operator=(const Function<TSig, RhsSboSize>& func) CI0_NOEXCEPT(true)
+        {
+            InitFunction(func);
             return *this;
         }
     };

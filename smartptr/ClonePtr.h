@@ -512,8 +512,6 @@ namespace ci0 {
     };
 
     // Specialization of ClonePtr with SboSize=0.
-    // This version of the class provides strong noexcept guarantee on move and swap.
-    // It also takes less space (exactly 3 pointer sizes).
     template <class Interface>
     class ClonePtr<Interface, 0u>
     {
