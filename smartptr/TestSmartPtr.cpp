@@ -305,6 +305,32 @@ void TestFuncRef(int argc)
     }
 }
 
+void TestFunction(int argc)
+{
+    {
+        typedef ci0::Function<int(int, int)> CombineFnRef;
+
+        CombineFnRef combineFnA =
+            [](int x, int y)
+            {
+                return x + y;
+            };
+        printf("%d = combineFnA(%d, %d)\n", combineFnA(1, 2), 1, 2);
+        CombineFnRef combineFnB;
+        combineFnB = combineFnA;
+        printf("%d = combineFnB(%d, %d)\n", combineFnB(1, 2), 1, 2);
+        int z = 3;
+        auto funcC = [&](int x, int y) { return x + y + z; };
+        CombineFnRef combineFnC = funcC;
+        ForceNoOpt(argc, combineFnC);
+        printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
+#if ENABLE_MISUSE
+        combineFnC = [&](int x, int y) { return x + y + z + 1; };
+        printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
+#endif
+    }
+}
+
 
 int main(int argc, char** argv)
 {
@@ -312,5 +338,6 @@ int main(int argc, char** argv)
     TestClonePtr();
     TestIntrusivePtr();
     TestFuncRef(argc);
+    TestFunction(argc);
     return 0;
 }

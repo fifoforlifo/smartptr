@@ -214,6 +214,7 @@ namespace ci0 {
                 m_pObject = rhs.m_pCloner->Move(rhs.m_pObject, m_sbo, SboSize);
                 m_pInterface = static_cast<Interface*>((RhsInterface*)(m_pObject + ((char*)rhs.m_pInterface - rhs.m_pObject)));
                 m_pCloner = rhs.m_pCloner;
+                rhs.InitNull();
                 return;
             }
 
@@ -238,6 +239,7 @@ namespace ci0 {
         template <class Object, class CastToInterface>
         void AssignObjectValue(Object&& obj, CastToInterface&& castToInterface)
         {
+            InitNull(); // reset members here, in case the constructor throws
             typedef typename std::decay<Object>::type Obj;
             if (sizeof(Obj) <= SboSize)
             {
@@ -352,7 +354,7 @@ namespace ci0 {
             }
             return *this;
         }
-        This& operator=(This&& rhs)
+        This& operator=(This&& rhs) // cannot guarantee noexcept
         {
             if (this != &rhs)
             {
@@ -633,6 +635,7 @@ namespace ci0 {
         template <class Object, class CastToInterface>
         void AssignObjectValue(Object&& obj, CastToInterface&& castToInterface)
         {
+            InitNull(); // reset members here, in case the constructor throws
             typedef typename std::decay<Object>::type Obj;
             Obj* pObject = new Obj(std::forward<Object>(obj));
             m_pInterface = castToInterface(pObject);
