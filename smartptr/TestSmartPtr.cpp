@@ -298,6 +298,8 @@ void TestFuncRef(int argc)
         CombineFnRef combineFnC = funcC;
         ForceNoOpt(argc, combineFnC);
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
+        CombineFnRef combineFnD = std::move(funcC);
+        printf("%d = combineFnD(%d, %d)\n", combineFnD(1, 2), 1, 2);
 #if ENABLE_MISUSE
         combineFnC = [&](int x, int y) { return x + y + z + 1; };
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
@@ -324,6 +326,32 @@ void TestFunction(int argc)
         CombineFnRef combineFnC = funcC;
         ForceNoOpt(argc, combineFnC);
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
+        CombineFnRef combineFnD = std::move(funcC);
+        printf("%d = combineFnD(%d, %d)\n", combineFnD(1, 2), 1, 2);
+#if ENABLE_MISUSE
+        combineFnC = [&](int x, int y) { return x + y + z + 1; };
+        printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
+#endif
+    }
+    {
+        typedef ci0::Function<int(int, int), 0u> CombineFnRef;
+
+        CombineFnRef combineFnA =
+            [](int x, int y)
+            {
+                return x + y;
+            };
+        printf("%d = combineFnA(%d, %d)\n", combineFnA(1, 2), 1, 2);
+        CombineFnRef combineFnB;
+        combineFnB = combineFnA;
+        printf("%d = combineFnB(%d, %d)\n", combineFnB(1, 2), 1, 2);
+        int z = 3;
+        auto funcC = [&](int x, int y) { return x + y + z; };
+        CombineFnRef combineFnC = funcC;
+        ForceNoOpt(argc, combineFnC);
+        printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
+        CombineFnRef combineFnD = std::move(combineFnC);
+        printf("%d = combineFnD(%d, %d)\n", combineFnD(1, 2), 1, 2);
 #if ENABLE_MISUSE
         combineFnC = [&](int x, int y) { return x + y + z + 1; };
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);

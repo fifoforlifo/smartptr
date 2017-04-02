@@ -17,12 +17,10 @@ namespace ci0 {
     struct IClonePtrCloner
     {
         const size_t sizeofObject;
-        const bool isMoveNoexcept;
 
         virtual ~IClonePtrCloner() {}
-        IClonePtrCloner(size_t sizeofObject_, bool isMoveNoexcept_)
+        IClonePtrCloner(size_t sizeofObject_)
             : sizeofObject(sizeofObject_)
-            , isMoveNoexcept(isMoveNoexcept_)
         {
         }
 
@@ -35,7 +33,7 @@ namespace ci0 {
     struct ClonePtrCloner : public IClonePtrCloner
     {
         ClonePtrCloner()
-            : IClonePtrCloner(sizeof(Object), std::is_nothrow_move_constructible<Object>::value)
+            : IClonePtrCloner(sizeof(Object))
         {
         }
 
@@ -58,7 +56,7 @@ namespace ci0 {
             return (char*)pNew;
         }
 
-        // Move() is only called when isMoveNoexcept is true.
+        // Move() is only called when is_nothrow_move_constructible<Object>::value == true.
         virtual char* Move(char* pRhsObj, char* pSbo, size_t sboSize) const
         {
             Object& rhs = *(Object*)pRhsObj;
@@ -183,9 +181,9 @@ namespace ci0 {
                 return;
             }
 
-            if (rhs.IsObjectInSboBuffer() && rhs.m_pCloner->isMoveNoexcept)
+            if (rhs.IsObjectInSboBuffer())
             {
-                // RHS Object lives in its SBO; we cannot steal the object pointer
+                // we cannot steal the object pointer; the move-constructor must be invoked dynamically
                 m_pObject = rhs.m_pCloner->Move(rhs.m_pObject, m_sbo, SboSize);
                 m_pInterface = (RhsInterface*)(m_pObject + ((char*)rhs.m_pInterface - rhs.m_pObject));
                 m_pCloner = rhs.m_pCloner;
@@ -208,9 +206,9 @@ namespace ci0 {
                 return;
             }
 
-            if (rhs.IsObjectInSboBuffer() && rhs.m_pCloner->isMoveNoexcept)
+            if (rhs.IsObjectInSboBuffer())
             {
-                // RHS Object lives in its SBO; invoke the object's move constructor.
+                // we cannot steal the object pointer; the move-constructor must be invoked dynamically
                 m_pObject = rhs.m_pCloner->Move(rhs.m_pObject, m_sbo, SboSize);
                 m_pInterface = static_cast<Interface*>((RhsInterface*)(m_pObject + ((char*)rhs.m_pInterface - rhs.m_pObject)));
                 m_pCloner = rhs.m_pCloner;
@@ -241,7 +239,7 @@ namespace ci0 {
         {
             InitNull(); // reset members here, in case the constructor throws
             typedef typename std::decay<Object>::type Obj;
-            if (sizeof(Obj) <= SboSize)
+            if (std::is_nothrow_move_constructible<Obj>::value && sizeof(Obj) <= SboSize)
             {
                 Obj* pObject = new (m_sbo) Obj(std::forward<Object>(obj));
                 m_pInterface = castToInterface(pObject);
@@ -292,7 +290,7 @@ namespace ci0 {
         {
             InitCopy_ImplicitCast(rhs);
         }
-        ClonePtr(This&& rhs) // cannot guarantee noexcept
+        ClonePtr(This&& rhs) CI0_NOEXCEPT(true)
         {
             InitMove_ImplicitCast(std::move(rhs));
         }
@@ -312,7 +310,7 @@ namespace ci0 {
             InitCopy_ImplicitCast(rhs);
         }
         template <class RhsInterface, size_t RhsSboSize>
-        ClonePtr(ClonePtr<RhsInterface, RhsSboSize>&& rhs)
+        ClonePtr(ClonePtr<RhsInterface, RhsSboSize>&& rhs) CI0_NOEXCEPT(true)
         {
             InitMove_ImplicitCast(std::move(rhs));
         }
@@ -354,7 +352,7 @@ namespace ci0 {
             }
             return *this;
         }
-        This& operator=(This&& rhs) // cannot guarantee noexcept
+        This& operator=(This&& rhs) CI0_NOEXCEPT(true)
         {
             if (this != &rhs)
             {
@@ -388,7 +386,7 @@ namespace ci0 {
             return *this;
         }
         template <class RhsInterface, size_t RhsSboSize>
-        This& operator=(ClonePtr<RhsInterface, RhsSboSize>&& rhs)
+        This& operator=(ClonePtr<RhsInterface, RhsSboSize>&& rhs) CI0_NOEXCEPT(true)
         {
             Release();
             InitMove_ImplicitCast(std::move(rhs));
@@ -600,11 +598,21 @@ namespace ci0 {
         }
 
         template <class RhsInterface, size_t RhsSboSize>
-        void InitMove_ImplicitCast(ClonePtr<RhsInterface, RhsSboSize>&& rhs) CI0_NOEXCEPT(true)
+        void InitMove_ImplicitCast(ClonePtr<RhsInterface, RhsSboSize>&& rhs)
         {
             if (!rhs.m_pInterface)
             {
                 InitNull();
+                return;
+            }
+
+            if (rhs.IsObjectInSboBuffer())
+            {
+                // we cannot steal the object pointer; the move-constructor must be invoked dynamically
+                m_pObject = rhs.m_pCloner->Move(rhs.m_pObject, m_sbo, SboSize);
+                m_pInterface = (RhsInterface*)(m_pObject + ((char*)rhs.m_pInterface - rhs.m_pObject));
+                m_pCloner = rhs.m_pCloner;
+                rhs.InitNull();
                 return;
             }
 
@@ -615,11 +623,21 @@ namespace ci0 {
             rhs.InitNull();
         }
         template <class RhsInterface, size_t RhsSboSize>
-        void InitMove_StaticCast(ClonePtr<RhsInterface, RhsSboSize>&& rhs) CI0_NOEXCEPT(true)
+        void InitMove_StaticCast(ClonePtr<RhsInterface, RhsSboSize>&& rhs)
         {
             if (!rhs.m_pInterface)
             {
                 InitNull();
+                return;
+            }
+
+            if (rhs.IsObjectInSboBuffer())
+            {
+                // we cannot steal the object pointer; the move-constructor must be invoked dynamically
+                m_pObject = rhs.m_pCloner->Move(rhs.m_pObject, m_sbo, SboSize);
+                m_pInterface = (RhsInterface*)(m_pObject + ((char*)rhs.m_pInterface - rhs.m_pObject));
+                m_pCloner = rhs.m_pCloner;
+                rhs.InitNull();
                 return;
             }
 
