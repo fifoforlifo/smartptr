@@ -1,6 +1,7 @@
 #include "UniquePtr.h"
 #include "ClonePtr.h"
 #include "IntrusivePtr.h"
+#include "Function.h"
 #include <stdio.h>
 #include <utility>
 
@@ -273,11 +274,28 @@ void TestIntrusivePtr()
     }
 }
 
+void TestFuncRef()
+{
+    {
+        typedef ci0::FuncRef<int(int, int)> CombineFnRef;
+
+        CombineFnRef combineFnA = [](int x, int y) { return x + y; };
+        printf("%d = combineFnA(%d, %d)\n", combineFnA(1, 2), 1, 2);
+        CombineFnRef combineFnB;
+        combineFnB = combineFnA;
+        printf("%d = combineFnB(%d, %d)\n", combineFnB(1, 2), 1, 2);
+        int z = 3;
+        CombineFnRef combineFnC = [&](int x, int y) { return x + y + z; };
+        printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
+    }
+}
+
 
 int main()
 {
     TestUniquePtr();
     TestClonePtr();
     TestIntrusivePtr();
+    TestFuncRef();
     return 0;
 }

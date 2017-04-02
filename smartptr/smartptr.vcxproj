@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClonePtr.h" />
+    <ClInclude Include="Function.h" />
     <ClInclude Include="IntrusivePtr.h" />
     <ClInclude Include="Noexcept.h" />
     <ClInclude Include="UniquePtr.h" />
