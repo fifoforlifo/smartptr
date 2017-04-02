@@ -94,155 +94,6 @@ namespace ci0 {
     template <class TRet, class... TArgs>
     FuncBase<TRet, TArgs...> SelectFuncBase(TRet(*)(TArgs...));
 
-    template <class TSig>
-    class FuncRef : public decltype(SelectFuncBase((TSig*)nullptr))
-    {
-    public:
-        typedef decltype(SelectFuncBase((TSig*)nullptr)) Base;
-        typedef FuncRef<TSig> This;
-
-    private:
-#if FUNCREF_ENABLE_DEBUG
-        struct IDebug
-        {
-            // introduce a vtable, so that the debugger can display the derived type
-            virtual void Dummy() {}
-        };
-        template <class RealObj>
-        struct DebugObj : IDebug
-        {
-            const RealObj* pObj;
-
-            DebugObj(const RealObj* pObj_)
-                : pObj(pObj_)
-            {
-            }
-        };
-        struct DebugRawFn : IDebug
-        {
-            typename Base::RawFn rawFn;
-
-            DebugRawFn(typename Base::RawFn rawFn_)
-                : rawFn(rawFn_)
-            {
-            }
-        };
-        struct DebugBuffer
-        {
-            void* storage[2];
-        };
-
-        IDebug* m_pDebug;
-        DebugBuffer m_debugBuffer;
-#endif
-
-        void InitNull()
-        {
-            Base::BaseInitNull();
-#if FUNCREF_ENABLE_DEBUG
-            m_pDebug = nullptr;
-#endif
-        }
-        void InitCopy(const This& rhs)
-        {
-            Base::BaseInitCopy(rhs);
-#if FUNCREF_ENABLE_DEBUG
-            m_debugBuffer = rhs.m_debugBuffer;
-            m_pDebug = (IDebug*)m_debugBuffer.storage;
-#endif
-        }
-        void InitRawFn(typename Base::RawFn rawFn)
-        {
-            Base::BaseInitRawFn(rawFn);
-#if FUNCREF_ENABLE_DEBUG
-            m_pDebug = new (m_debugBuffer.storage) DebugRawFn(rawFn);
-#endif
-        }
-        template <class RealObj>
-        void InitFuncObj(RealObj&& realObj)
-        {
-            typedef typename std::decay<RealObj>::type Obj;
-            Base::BaseInitFuncObj(static_cast<RealObj&&>(realObj));
-#if FUNCREF_ENABLE_DEBUG
-            static_assert(sizeof(DebugObj<Obj>) <= sizeof(m_debugBuffer.storage), "");
-            m_pDebug = new (m_debugBuffer.storage) DebugObj<Obj>(&realObj);
-#endif
-        }
-
-    public:
-        // no destructor because it's just a reference
-        FuncRef() CI0_NOEXCEPT(true)
-        {
-            InitNull();
-        }
-        FuncRef(std::nullptr_t) CI0_NOEXCEPT(true)
-        {
-            InitNull();
-        }
-        FuncRef(const This& rhs) CI0_NOEXCEPT(true)
-        {
-            InitCopy(rhs);
-        }
-        FuncRef(const This&& rhs) CI0_NOEXCEPT(true)
-        {
-            InitCopy(rhs);
-        }
-        FuncRef(This& rhs) CI0_NOEXCEPT(true)
-        {
-            InitCopy(rhs);
-        }
-        FuncRef(This&& rhs) CI0_NOEXCEPT(true)
-        {
-            InitCopy(rhs);
-        }
-        FuncRef(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
-        {
-            InitRawFn(rawFn);
-        }
-        template <class RealObj>
-        FuncRef(RealObj&& realObj) CI0_NOEXCEPT(true)
-        {
-            InitFuncObj(static_cast<RealObj&&>(realObj));
-        }
-
-        This& operator=(std::nullptr_t) CI0_NOEXCEPT(true)
-        {
-            InitNull();
-            return *this;
-        }
-        This& operator=(const This& rhs) CI0_NOEXCEPT(true)
-        {
-            InitCopy(rhs);
-            return *this;
-        }
-        This& operator=(const This&& rhs) CI0_NOEXCEPT(true)
-        {
-            InitCopy(rhs);
-            return *this;
-        }
-        This& operator=(This& rhs) CI0_NOEXCEPT(true)
-        {
-            InitCopy(rhs);
-            return *this;
-        }
-        This& operator=(This&& rhs) CI0_NOEXCEPT(true)
-        {
-            InitCopy(rhs);
-            return *this;
-        }
-        This& operator=(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
-        {
-            AssignRaw(rawFn);
-            return *this;
-        }
-        template <class RealObj>
-        This& operator=(RealObj&& realObj) CI0_NOEXCEPT(true)
-        {
-            InitFuncObj(static_cast<RealObj&&>(realObj));
-            return *this;
-        }
-    };
-
     template <class TSig, size_t SboSize = sizeof(void*)>
     class Function : public decltype(SelectFuncBase((TSig*)nullptr))
     {
@@ -695,6 +546,155 @@ namespace ci0 {
         }
         template <class RealObj>
         This& operator=(RealObj&& realObj)
+        {
+            InitFuncObj(static_cast<RealObj&&>(realObj));
+            return *this;
+        }
+    };
+
+    template <class TSig>
+    class FuncRef : public decltype(SelectFuncBase((TSig*)nullptr))
+    {
+    public:
+        typedef decltype(SelectFuncBase((TSig*)nullptr)) Base;
+        typedef FuncRef<TSig> This;
+
+    private:
+#if FUNCREF_ENABLE_DEBUG
+        struct IDebug
+        {
+            // introduce a vtable, so that the debugger can display the derived type
+            virtual void Dummy() {}
+        };
+        template <class RealObj>
+        struct DebugObj : IDebug
+        {
+            const RealObj* pObj;
+
+            DebugObj(const RealObj* pObj_)
+                : pObj(pObj_)
+            {
+            }
+        };
+        struct DebugRawFn : IDebug
+        {
+            typename Base::RawFn rawFn;
+
+            DebugRawFn(typename Base::RawFn rawFn_)
+                : rawFn(rawFn_)
+            {
+            }
+        };
+        struct DebugBuffer
+        {
+            void* storage[2];
+        };
+
+        IDebug* m_pDebug;
+        DebugBuffer m_debugBuffer;
+#endif
+
+        void InitNull()
+        {
+            Base::BaseInitNull();
+#if FUNCREF_ENABLE_DEBUG
+            m_pDebug = nullptr;
+#endif
+        }
+        void InitCopy(const This& rhs)
+        {
+            Base::BaseInitCopy(rhs);
+#if FUNCREF_ENABLE_DEBUG
+            m_debugBuffer = rhs.m_debugBuffer;
+            m_pDebug = (IDebug*)m_debugBuffer.storage;
+#endif
+        }
+        void InitRawFn(typename Base::RawFn rawFn)
+        {
+            Base::BaseInitRawFn(rawFn);
+#if FUNCREF_ENABLE_DEBUG
+            m_pDebug = new (m_debugBuffer.storage) DebugRawFn(rawFn);
+#endif
+        }
+        template <class RealObj>
+        void InitFuncObj(RealObj&& realObj)
+        {
+            typedef typename std::decay<RealObj>::type Obj;
+            Base::BaseInitFuncObj(static_cast<RealObj&&>(realObj));
+#if FUNCREF_ENABLE_DEBUG
+            static_assert(sizeof(DebugObj<Obj>) <= sizeof(m_debugBuffer.storage), "");
+            m_pDebug = new (m_debugBuffer.storage) DebugObj<Obj>(&realObj);
+#endif
+        }
+
+    public:
+        // no destructor because it's just a reference
+        FuncRef() CI0_NOEXCEPT(true)
+        {
+            InitNull();
+        }
+        FuncRef(std::nullptr_t) CI0_NOEXCEPT(true)
+        {
+            InitNull();
+        }
+        FuncRef(const This& rhs) CI0_NOEXCEPT(true)
+        {
+            InitCopy(rhs);
+        }
+        FuncRef(const This&& rhs) CI0_NOEXCEPT(true)
+        {
+            InitCopy(rhs);
+        }
+        FuncRef(This& rhs) CI0_NOEXCEPT(true)
+        {
+            InitCopy(rhs);
+        }
+        FuncRef(This&& rhs) CI0_NOEXCEPT(true)
+        {
+            InitCopy(rhs);
+        }
+        FuncRef(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
+        {
+            InitRawFn(rawFn);
+        }
+        template <class RealObj>
+        FuncRef(RealObj&& realObj) CI0_NOEXCEPT(true)
+        {
+            InitFuncObj(static_cast<RealObj&&>(realObj));
+        }
+
+        This& operator=(std::nullptr_t) CI0_NOEXCEPT(true)
+        {
+            InitNull();
+            return *this;
+        }
+        This& operator=(const This& rhs) CI0_NOEXCEPT(true)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        This& operator=(const This&& rhs) CI0_NOEXCEPT(true)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        This& operator=(This& rhs) CI0_NOEXCEPT(true)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        This& operator=(This&& rhs) CI0_NOEXCEPT(true)
+        {
+            InitCopy(rhs);
+            return *this;
+        }
+        This& operator=(typename Base::RawFn rawFn) CI0_NOEXCEPT(true)
+        {
+            AssignRaw(rawFn);
+            return *this;
+        }
+        template <class RealObj>
+        This& operator=(RealObj&& realObj) CI0_NOEXCEPT(true)
         {
             InitFuncObj(static_cast<RealObj&&>(realObj));
             return *this;
