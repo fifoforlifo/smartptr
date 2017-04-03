@@ -4,6 +4,7 @@
 #include "Function.h"
 #include <stdio.h>
 #include <utility>
+#include <functional>
 
 #define ENABLE_MISUSE 0
 
@@ -283,12 +284,30 @@ void ForceNoOpt(int argc, Foo&& foo)
     }
 }
 
+__declspec(noinline)
+void UseFuncRef(const char* pName, const ci0::FuncRef<int(int, int)>& func)
+{
+    printf("%d = %s(%d, %d)\n", func(1, 2), pName, 1, 2);
+}
+__declspec(noinline)
+void UseFunction(const char* pName, const ci0::Function<int(int, int)>& func)
+{
+    printf("%d = %s(%d, %d)\n", func(1, 2), pName, 1, 2);
+}
+__declspec(noinline)
+void UseStdFunction(const char* pName, const std::function<int(int, int)>& func)
+{
+    printf("%d = %s(%d, %d)\n", func(1, 2), pName, 1, 2);
+}
+
 void TestFuncRef(int argc)
 {
     {
         typedef ci0::FuncRef<int(int, int)> CombineFnRef;
 
+        UseFuncRef("lambda", [](int x, int y) { return x * y; });
         CombineFnRef combineFnA = [](int x, int y) { return x + y; };
+        UseFuncRef("combineFnA", combineFnA);
         printf("%d = combineFnA(%d, %d)\n", combineFnA(1, 2), 1, 2);
         CombineFnRef combineFnB;
         combineFnB = combineFnA;
@@ -326,6 +345,7 @@ void TestFunction(int argc)
             {
                 return x + y;
             };
+        UseFuncRef("combineFnA", combineFnA);
         printf("%d = combineFnA(%d, %d)\n", combineFnA(1, 2), 1, 2);
         CombineFn combineFnB;
         combineFnB = combineFnA;
@@ -392,6 +412,28 @@ void TestFunction(int argc)
         combineFnC = [&](int x, int y) { return x + y + z + 1; };
         printf("%d = combineFnC(%d, %d)\n", combineFnC(1, 2), 1, 2);
 #endif
+    }
+    {
+        int a0 = 2, a1 = 3;
+        if (argc > 10)
+        {
+            a0 *= 2;
+        }
+        UseFuncRef("FuncRef(innerProduct)",
+            [&](int x, int y)
+            {
+                return x * a0 + y * a1;
+            });
+        UseFunction("Function(innerProduct)",
+            [&](int x, int y)
+            {
+                return x * a0 + y * a1;
+            });
+        UseStdFunction("std::function(innerProduct)",
+            [&](int x, int y)
+            {
+                return x * a0 + y * a1;
+            });
     }
 }
 
