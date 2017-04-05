@@ -42,12 +42,38 @@ namespace ci0 {
             virtual void Dummy() {}
         };
         template <class RealObj>
-        struct DebugObj : IDebug
+        struct DebugObjConstMemFn : IDebug
         {
             const RealObj* pObj;
+            TRet(RealObj::*fn)(TArgs...) const;
 
-            DebugObj(const RealObj* pObj_)
+            DebugObjConstMemFn(const RealObj* pObj_, TRet(RealObj::*fn_)(TArgs...) const)
                 : pObj(pObj_)
+                , fn(fn_)
+            {
+            }
+        };
+        template <class RealObj>
+        struct DebugObjMemFn : IDebug
+        {
+            const RealObj* pObj;
+            TRet(RealObj::*m_fn)(TArgs...);
+
+            DebugObjMemFn(const RealObj* pObj_, TRet(RealObj::*fn_)(TArgs...))
+                : pObj(pObj_)
+                , fn(fn_)
+            {
+            }
+        };
+        template <class RealObj>
+        struct DebugObjStaticFn : IDebug
+        {
+            const RealObj* pObj;
+            TRet(*fn)(TArgs...);
+
+            DebugObjStaticFn(const RealObj* pObj_, TRet(*fn_)(TArgs...))
+                : pObj(pObj_)
+                , fn(fn_)
             {
             }
         };
@@ -62,8 +88,27 @@ namespace ci0 {
         };
         struct DebugBuffer
         {
-            void* storage[2];
+            void* storage[3];
         };
+
+        template <class RealObj>
+        void CreateDebugObj(const RealObj* pObj_, TRet(RealObj::*fn_)(TArgs...) const)
+        {
+            static_assert(sizeof(DebugObjConstMemFn<RealObj>) <= sizeof(m_debugBuffer.storage), "");
+            new (m_debugBuffer.storage) DebugObjConstMemFn<RealObj>(pObj_, fn_);
+        }
+        template <class RealObj>
+        void CreateDebugObj(const RealObj* pObj_, TRet(RealObj::*fn_)(TArgs...))
+        {
+            static_assert(sizeof(DebugObjMemFn<RealObj>) <= sizeof(m_debugBuffer.storage), "");
+            new (m_debugBuffer.storage) DebugObjMemFn<RealObj>(pObj_, fn_);
+        }
+        template <class RealObj>
+        void CreateDebugObj(const RealObj* pObj_, TRet(*fn_)(TArgs...))
+        {
+            static_assert(sizeof(DebugObjStaticFn<RealObj>) <= sizeof(m_debugBuffer.storage), "");
+            new (m_debugBuffer.storage) DebugObjStaticFn<RealObj>(pObj_, fn_);
+        }
 #endif
 
     protected:
@@ -164,6 +209,7 @@ namespace ci0 {
             // TODO: make this typesafe
             this->m_debugBuffer.storage[0] = rhs.m_debugBuffer.storage[0];
             this->m_debugBuffer.storage[1] = this->m_pObj;
+            this->m_debugBuffer.storage[2] = rhs.m_debugBuffer.storage[2];
             m_pDebug = (typename Base::IDebug*)this->m_debugBuffer.storage;
         }
 #endif
@@ -261,8 +307,7 @@ namespace ci0 {
             this->m_wrapperFn = &Base::ObjectAdapter<Obj>::Invoke;
             m_pCloner = &ClonePtrCloner<Obj>::Instance;
 #if FUNCTION_ENABLE_DEBUG
-            static_assert(sizeof(DebugObj<Obj>) <= sizeof(this->m_debugBuffer.storage), "");
-            m_pDebug = new (this->m_debugBuffer.storage) DebugObj<Obj>(&realObj);
+            this->CreateDebugObj<Obj>(&realObj, &Obj::operator());
 #endif
         }
         bool IsObjectInSboBuffer() const
@@ -425,6 +470,7 @@ namespace ci0 {
             // TODO: make this typesafe
             this->m_debugBuffer.storage[0] = rhs.m_debugBuffer.storage[0];
             this->m_debugBuffer.storage[1] = this->m_pObj;
+            this->m_debugBuffer.storage[2] = rhs.m_debugBuffer.storage[2];
             m_pDebug = (typename Base::IDebug*)this->m_debugBuffer.storage;
         }
 #endif
@@ -513,8 +559,7 @@ namespace ci0 {
             this->m_wrapperFn = &Base::ObjectAdapter<Obj>::Invoke;
             m_pCloner = &ClonePtrCloner<Obj>::Instance;
 #if FUNCTION_ENABLE_DEBUG
-            static_assert(sizeof(DebugObj<Obj>) <= sizeof(this->m_debugBuffer.storage), "");
-            m_pDebug = new (this->m_debugBuffer.storage) DebugObj<Obj>(&realObj);
+            this->CreateDebugObj<Obj>(&realObj, &Obj::operator());
 #endif
         }
         bool IsObjectInSboBuffer() const
@@ -684,8 +729,7 @@ namespace ci0 {
             typedef typename std::decay<RealObj>::type Obj;
             Base::BaseInitFuncObj(static_cast<RealObj&&>(realObj));
 #if FUNCTION_ENABLE_DEBUG
-            static_assert(sizeof(DebugObj<Obj>) <= sizeof(this->m_debugBuffer.storage), "");
-            m_pDebug = new (this->m_debugBuffer.storage) DebugObj<Obj>(&realObj);
+            this->CreateDebugObj<Obj>(&realObj, &Obj::operator());
 #endif
         }
         template <size_t RhsSboSize>
